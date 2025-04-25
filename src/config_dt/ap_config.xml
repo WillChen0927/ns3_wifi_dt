@@ -1,0 +1,112 @@
+<ManagedElement xmlns="urn:3gpp:sa5:_3gpp-common-managed-element">
+  <id>ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001</id>
+  <attributes>
+    <priorityLabel>1</priorityLabel>
+  </attributes>
+  <GNBDUFunction xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-gnbdufunction">
+    <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3</id>
+    <attributes>
+      <priorityLabel>1</priorityLabel>
+      <gNBId>0</gNBId>
+      <gNBIdLength>32</gNBIdLength>
+      <gNBDUId>1</gNBDUId>
+      <gNBDUName>RB_1F_AP01</gNBDUName>
+      <peeParametersList>
+        <idx>1</idx>
+        <siteLatitude>10.0</siteLatitude>
+        <siteLongitude>20.0</siteLongitude>
+        <siteAltitude>30.0</siteAltitude>
+      </peeParametersList> 
+    </attributes>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,2.4G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>1</arfcnDL>
+      </attributes>
+    </NRCellDU>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,5G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>36</arfcnDL>
+      </attributes>
+    </NRCellDU>
+  </GNBDUFunction>
+  <GNBDUFunction xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-gnbdufunction">
+    <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1</id>
+    <attributes>
+      <priorityLabel>1</priorityLabel>
+      <gNBId>0</gNBId>
+      <gNBIdLength>32</gNBIdLength>
+      <gNBDUId>2</gNBDUId>
+      <gNBDUName>RB_1F_AP02</gNBDUName>
+      <peeParametersList>
+        <idx>2</idx>
+        <siteLatitude>40.0</siteLatitude>
+        <siteLongitude>50.0</siteLongitude>
+        <siteAltitude>60.0</siteAltitude>
+      </peeParametersList> 
+    </attributes>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1,2.4G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>2</arfcnDL>
+      </attributes>
+    </NRCellDU>
+  </GNBDUFunction>
+  <GNBDUFunction xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-gnbdufunction">
+    <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2</id>
+    <attributes>
+      <priorityLabel>1</priorityLabel>
+      <gNBId>0</gNBId>
+      <gNBIdLength>32</gNBIdLength>
+      <gNBDUId>3</gNBDUId>
+      <gNBDUName>RB_1F_AP03</gNBDUName>
+      <peeParametersList>
+        <idx>3</idx>
+        <siteLatitude>50.0</siteLatitude>
+        <siteLongitude>60.0</siteLongitude>
+        <siteAltitude>70.0</siteAltitude>
+      </peeParametersList> 
+    </attributes>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2,5G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>40</arfcnDL>
+      </attributes>
+    </NRCellDU>
+  </GNBDUFunction>
+    <GNBDUFunction xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-gnbdufunction">
+    <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3</id>
+    <attributes>
+      <priorityLabel>1</priorityLabel>
+      <gNBId>0</gNBId>
+      <gNBIdLength>32</gNBIdLength>
+      <gNBDUId>4</gNBDUId>
+      <gNBDUName>RB_1F_AP04</gNBDUName>
+      <peeParametersList>
+        <idx>4</idx>
+        <siteLatitude>40.0</siteLatitude>
+        <siteLongitude>40.0</siteLongitude>
+        <siteAltitude>40.0</siteAltitude>
+      </peeParametersList> 
+    </attributes>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,5G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>44</arfcnDL>
+      </attributes>
+    </NRCellDU>
+    <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
+      <id>ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,2.4G</id>
+      <attributes>
+        <priorityLabel>1</priorityLabel>
+        <arfcnDL>4</arfcnDL>
+      </attributes>
+    </NRCellDU>
+  </GNBDUFunction>
+</ManagedElement>

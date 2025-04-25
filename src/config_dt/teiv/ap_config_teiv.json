@@ -1,0 +1,171 @@
+{"entities": [
+    {
+      "o-ran-smo-teiv-oam:ManagedElement": [
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001",
+          "attributes": {
+            "priorityLabel": 1,
+            "status": "Assigned"
+          }
+        }
+      ],
+      "o-ran-smo-teiv-ran:ODUFunction": [
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3",
+          "attributes": {
+            "priorityLabel": 1,
+            "gNBId":0,
+            "gNBIdLength":32,
+            "gNBDUId":1,
+            "gNBDUName":"RB_1F_AP01",
+            "peeParametersList":{"idx":1, "siteLatitude":10.0, "siteLongitude":0.0, "siteAltitude":0.0 },
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1",
+          "attributes": {
+            "priorityLabel": 1,
+            "gNBId":0,
+            "gNBIdLength":32,
+            "gNBDUId":2,
+            "gNBDUName":"RB_1F_AP02",
+            "peeParametersList":{"idx":2, "siteLatitude":20.0, "siteLongitude":0.0, "siteAltitude":0.0 },
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2",
+          "attributes": {
+            "priorityLabel": 1,
+            "gNBId":0,
+            "gNBIdLength":32,
+            "gNBDUId":3,
+            "gNBDUName":"RB_1F_AP03",
+            "peeParametersList":{"idx":3, "siteLatitude":30.0, "siteLongitude":0.0, "siteAltitude":0.0 },
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3",
+          "attributes": {
+            "priorityLabel": 1,
+            "gNBId":0,
+            "gNBIdLength":32,
+            "gNBDUId":4,
+            "gNBDUName":"RB_1F_AP04",
+            "peeParametersList":{"idx":4, "siteLatitude":40.0, "siteLongitude":0.0, "siteAltitude":0.0 },
+            "status": "Assigned"
+          }
+        }
+      ],
+      "o-ran-smo-teiv-ran:NRCellDU": [
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,2.4G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":1,
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,5G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":36,
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1,2.4G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":2,
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2,5G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":40,
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,5G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":44,
+            "status": "Assigned"
+          }
+        },
+        {
+          "id": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,2.4G",
+          "attributes": {
+            "priorityLabel": 1,
+            "arfcnDL":4,
+            "status": "Assigned"
+          }
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "o-ran-smo-teiv-rel-oam-ran:MANAGEDELEMENT_MANAGES_ODUFUNCTION": [
+        {
+          "id": "urn:oran:smo:teiv:MANAGEDELEMENT_MANAGES_ODUFUNCTION_WIFI=1",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3"
+        },
+        {
+          "id": "urn:oran:smo:teiv:MANAGEDELEMENT_MANAGES_ODUFUNCTION_WIFI=2",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1"
+        },
+        {
+          "id": "urn:oran:smo:teiv:MANAGEDELEMENT_MANAGES_ODUFUNCTION_WIFI=3",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2"
+        },
+        {
+          "id": "urn:oran:smo:teiv:MANAGEDELEMENT_MANAGES_ODUFUNCTION_WIFI=4",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-0001",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3"
+        }
+      ],
+      "o-ran-smo-teiv-ran:ODUFUNCTION_PROVIDES_NRCELLDU": [
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=1",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,2.4G"
+        },
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=2",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-1,802.11ax,band=3,5G"
+        },
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=3",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-2,802.11n,band=1,2.4G"
+        },
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=4",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-3,802.11ac,band=2,5G"
+        },
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=5",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,5G"
+        },
+        {
+          "id": "urn:oran:smo:teiv:ODUFUNCTION_PROVIDES_NRCELLDU_WIFI=6",
+          "aSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3",
+          "bSide": "ManagedElement=ns3-wifi-dt,ntust-peap,AP-4,802.11ax,band=3,2.4G"
+        }
+      ]
+    }
+  ]}
