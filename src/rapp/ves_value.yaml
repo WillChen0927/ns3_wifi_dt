@@ -1,0 +1,22 @@
+dmaap-influxdb-adapter:
+  image:
+    pullPolicy: Always
+  logLevel: DEBUG
+  rules:
+    - topic: unauthenticated.VES_MEASUREMENT_OUTPUT
+      rules:
+        - bucket: ns3-wifi-dt-test
+          measurement: ap-pm
+          matches:
+            - key: event.commonEventHeader.domain
+              value: measurement
+          fields:
+            - key: RB_1F_AP01
+              field: event.measurementFields.additionalFields.RB_1F_AP01
+              type: float
+            - key: RB_1F_AP02
+              field: event.measurementFields.additionalFields.RB_1F_AP02
+              type: float
+            - key: RB_1F_AP03
+              field: event.measurementFields.additionalFields.RB_1F_AP03
+              type: float
