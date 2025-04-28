@@ -5,7 +5,7 @@
 
 #variable declaration
 CURRENT_PATH=`pwd`
-HOME="$CURRENT_PATH/../../.."
+HOME="$CURRENT_PATH/../../"
 NETCONF_PATH="$HOME/netconf"
 
 INSTALL="netconf"
