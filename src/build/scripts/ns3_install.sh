@@ -27,9 +27,10 @@ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
 
 echo "Installing developer tools..."
 sudo apt-get install -y git vim cmake ninja-build
-sudo apt-get install -y python3 python3-dev python3-pygraphviz python3-gi python3-gi-cairo ipython3
+sudo apt-get install -y python3 python3-dev python3-pygraphviz python3-gi python3-gi-cairo ipython3 python3-pip
 sudo apt-get install -y gir1.2-gtk-3.0 gir1.2-goocanvas-2.0
 sudo apt-get install -y pkg-config qt5-qmake qt5-default qtchooser qtbase5-dev-tools qtbase5-dev libgtk-3-dev
+python3 -m pip install --user cppyy==3.1.2
 
 echo "Creating ns-3 workspace..."
 mkdir -p ns-3

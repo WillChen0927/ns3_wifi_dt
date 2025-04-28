@@ -1,0 +1,156 @@
+# Using RESTful API to Configure STA of ns-3
+
+In this project, I implemented a RESTful API server within an ns-3 simulation. This allows the simulation to receive JSON-formatted data sent from SMO in real time. The goal is to enable external control the STA in ns-3 simulation.
+
+- [Using RESTful API to Configure STA of ns-3](#using-restful-api-to-configure-sta-of-ns-3)
+  - [What is a RESTful API?](#what-is-a-restful-api)
+    - [Core Concepts:](#core-concepts)
+    - [Advantages:](#advantages)
+  - [Implementation Steps](#implementation-steps)
+    - [1. REST Server Integration](#1-rest-server-integration)
+    - [2. JSON format config file](#2-json-format-config-file)
+    - [3.Send config file](#3send-config-file)
+    - [4. Real-Time Interaction](#4-real-time-interaction)
+
+
+## What is a RESTful API?
+
+A **RESTful API (Representational State Transfer API)** is a type of web API that allows different systems to communicate over the internet using HTTP. 
+It follows a set of design principles that make it **simple, scalable, and stateless**.
+
+
+### Core Concepts:
+ 1. Resources
+Everything is treated as a resource (e.g., users, products, orders). Each resource is identified by a URL.
+Example: 
+```shl=
+GET /users/123  //retrieves user #123.
+```
+
+ 2. HTTP Methods
+Actions on resources are defined by standard HTTP methods:
+* GET – Retrieve data
+* POST – Create new data
+* PUT – Update existing data (entire record)
+* PATCH – Partially update data
+* DELETE – Remove data
+ 3. Stateless
+Each request contains all the information needed. The server does not store client context between requests.
+ 4. Uniform Interface
+A consistent and predictable structure that simplifies interaction with the API.
+ 5. Data Format
+Data is usually exchanged in **JSON format**, though XML or others can also be used.
+
+### Advantages:
+* Simple and easy to use
+* Works over HTTP (widely supported)
+* Language-agnostic (used in mobile, web, IoT, etc.)
+* Scalable and flexible
+ 
+ 
+ ## Implementation Steps
+ 
+ ### 1. [REST Server Integration](https://github.com/bmw-ece-ntust/wifi-ns3/blob/will-daily/src/ns-3_files/scratch/wifi-dt-EMS.cc#L21)
+* I used the cpp-httplib header-only C++ library to create a lightweight HTTP server directly inside the ns-3 program.
+* The server listens for POST requests on a specific endpoint (e.g., /upload).
+
+```cpp=
+void StartRestServer() {
+    Server svr;
+
+    svr.Post("/upload", [](const Request& req, Response& res) {
+        try {
+            auto j = json::parse(req.body);
+
+            if (j.contains("numberOfSTA") && j.contains("STAConfig") && j["STAConfig"].is_array()) {
+                size_t numSta = j["numberOfSTA"];
+                auto staConfigs = j["STAConfig"];
+
+                if (staConfigs.size() == numSta) {
+                    for (const auto& sta : staConfigs) {
+                        std::string name = sta["STAName"];
+                        std::string ap = sta["connectedofAP"];
+                        int throughput = sta["throughput"];
+                        int duration = sta["Duration"];
+                        std::lock_guard<std::mutex> lock(g_mutex);
+                        g_staConfigs.clear();
+                        for (const auto& sta : staConfigs) {
+                            g_staConfigs.push_back(sta);
+                        }
+                        g_triggerSend = true;
+
+                        std::cout << "[REST] STA " << name << " connect to " << ap
+                                  << ", throughput=" << throughput
+                                  << " kbps, duration=" << duration << "s\n";
+                    }
+                    res.set_content("{\"status\": \"multi-sta ok\"}", "application/json");
+                } else {
+                    res.set_content("{\"status\": \"numberOfSTA mismatch STAConfig length\"}", "application/json");
+                }
+            } else {
+                res.set_content("{\"status\": \"invalid json format\"}", "application/json");
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            res.set_content("{\"status\": \"invalid json\"}", "application/json");
+        }
+    });
+
+    std::cout << "RESTful server listening on port 5000" << std::endl;
+    svr.listen("0.0.0.0", 5000);
+}
+```
+
+### 2. JSON format config file
+* The server uses the nlohmann/json C++ library to parse incoming JSON strings.
+* Example:
+
+```json=
+{
+    "DateTime": "2025-04-22T15:38:56",
+    "numberOfSTA": 3,
+    "STAConfig": [
+        {
+            "STAName": "m11302229",
+            "connectedofAP": "RB_1F_AP01",
+            "throughput": 2000,
+            "Duration": 5
+        },
+        {
+            "STAName": "m11302230",
+            "connectedofAP": "RB_1F_AP02",
+            "throughput": 1500,
+            "Duration": 5
+        },
+        {
+            "STAName": "m11302231",
+            "connectedofAP": "RB_2F_AP01",
+            "throughput": 1800,
+            "Duration": 5
+        }
+    ]
+}
+```
+
+### 3.Send config file
+* On a SMO, we can use a Python script or REST client (e.g., Postman or curl) sends a POST request to the ns-3 machine’s IP and port with the JSON data.
+* Example command:
+    * transmit string:
+    ```shell=
+    curl -X POST http://<ns3-ip>:8080/upload -H "Content-Type: application/json" -d '{"staId": 5, "triggerSend": true}'
+    ```
+    * transmit json file:
+    ```shell=
+    curl -X POST http://<ns3-ip>:5000/upload -H "Content-Type: application/json" --data-binary @sta-config.json
+    ```
+
+
+### 4. Real-Time Interaction
+* In a ns-3 program, I have two threads, one for listening REST requests and another for runing ns-3 simulation.
+* When the REST server receives a REST request, the log prints the contents of the file
+
+![image](./images/rest_receive.png)
+* Next second, the STAs will be add into the simulation.
+
+![image](./images/added_into_sim.png)
