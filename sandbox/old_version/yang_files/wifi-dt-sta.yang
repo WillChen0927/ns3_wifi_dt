@@ -1,0 +1,111 @@
+module wifi-dt-sta {
+    namespace "urn:myconfig:wifidtsta";
+    prefix wifidtsta;
+
+    organization "Your Organization";
+    contact "your.email@example.com";
+    description "ns-3 wifi digital twin application.";
+
+    revision "2023-10-30" {
+        description "Initial revision: add sta config.";
+    }
+
+    container sta-config {
+        description "Container for configuring STA additions.";
+
+        leaf date {
+            type string;
+            description "Date of configuration file sent";
+        }
+        
+        list add-sta-list {
+            description "List of STAs to be added.";
+
+            key "staname";
+
+            leaf staname {
+                type string;
+                description "Name of the STA.";
+            }
+
+            leaf apname {
+                type string;
+                description "Name of the AP associated with the STA.";
+            }
+
+            container position {
+                description "Position of the STA.";
+
+                leaf x {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "X-coordinate position of the STA.";
+                }
+                leaf y {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "Y-coordinate position of the STA.";
+                }
+                leaf z {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "Z-coordinate position of the STA.";
+                }
+            }
+        }
+
+        list traffic-sta-list {
+            key "staname";
+
+            leaf staname {
+                type string;
+                description "Name of the STA.";
+            }
+
+            leaf tp {
+                type uint32;
+                description "Throughput(kbps) of the STA.";
+            }
+
+            leaf time {
+                type uint32;
+                description "STA traffic time.";
+            }
+        }
+
+        list mobility-sta-list {
+            key "staname";
+
+            leaf staname {
+                type string;
+                description "Name of the STA.";
+            }
+
+            container position {
+                description "new Position of the STA.";
+
+                leaf x {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "new X-coordinate position of the STA.";
+                }
+                leaf y {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "new Y-coordinate position of the STA.";
+                }
+                leaf z {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "new Z-coordinate position of the STA.";
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,11 @@
+<sta-config xmlns="urn:myconfig:wifidtsta">
+    <date>2024-11-04-12:20</date>
+    <mobility-sta-list>
+        <staname>m11302229</staname>
+        <position>
+            <x>10.0</x>
+            <y>0.0</y>
+            <z>0.0</z>
+        </position>
+    </mobility-sta-list>
+</sta-config>

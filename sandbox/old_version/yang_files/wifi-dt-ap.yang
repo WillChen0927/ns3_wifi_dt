@@ -1,0 +1,68 @@
+module wifi-dt-ap {
+    namespace "urn:myconfig:wifidtap";
+    prefix wifidtap;
+
+    organization "Your Organization";
+    contact "your.email@example.com";
+    description "ns-3 wifi digital twin application.";
+
+    revision "2023-10-30" {
+        description "Initial revision: add ap config.";
+    }
+
+    container ap-config {
+        description "Configuration container for ns-3 wifi-dt ap.";
+
+        leaf date {
+            type string;
+            description "Date of the network";
+        }
+
+        leaf ssid {
+            type string;
+            description "SSID of the network";
+        }
+        leaf wifi-standard {
+            type string;
+            description "WiFi standard, e.g., 80211n, 80211ac";
+        }
+
+        list aps {
+            key "id";
+            description "List of APs with unique IDs";
+
+            leaf id {
+                type uint32;
+                description "Unique identifier for each AP";
+            }
+            leaf ap-name {
+                type string;
+                description "Name of the AP";
+            }
+            leaf ap-channel {
+                type uint32;
+                description "Channel number for the AP";
+            }
+            container position {
+                leaf x {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "X-coordinate position";
+                }
+                leaf y {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "Y-coordinate position";
+                }
+                leaf z {
+                    type decimal64 {
+                        fraction-digits 1;
+                    }
+                    description "Z-coordinate position";
+                }
+            }
+        }
+    }
+}
