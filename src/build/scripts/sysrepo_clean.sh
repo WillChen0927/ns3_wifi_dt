@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Navigate to the sysrepo build directory and clean up
-cd ../..
+cd ../../../..
 cd netconf/sysrepo/build/
 sudo make sr_clean
 

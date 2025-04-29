@@ -5,7 +5,7 @@ echo "Starting ns-3.44 Environment Setup..."
 
 # Save current path
 CURRENT_PATH=$(pwd)
-ROOT_DIR="$CURRENT_PATH/../.."
+ROOT_DIR="$CURRENT_PATH/../../../../"
 cd "$ROOT_DIR"
 
 echo "Adding toolchain PPA if not already added..."
