@@ -68,6 +68,7 @@ class AccessPointManager
         struct AccessPoint {
             int ap_id;
             std::string ap_name;
+            std::string ap_standard;
             Position location;
             std::string ssid;
             int band;           // 1: 2.4GHz, 2: 5GHz, 3: Dual-band
@@ -82,7 +83,8 @@ class AccessPointManager
         void PrintAll() const {
             for (const auto& ap : ap_list) {
                 std::cout << "AP ID: " << ap.ap_id << ", Name: " << ap.ap_name
-                          << ", SSID: " << ap.ssid << ", Band: " << ap.band
+                          << ", SSID: " << ap.ssid << ", Standard: " << ap.ap_standard 
+                          << ", Band: " << ap.band
                           << ", Position: (" << ap.location.x << ", "
                           << ap.location.y << ", " << ap.location.z << ")"
                           << ", CH1: " << ap.channel_band1
@@ -256,6 +258,7 @@ class APConfigCb : public sysrepo::Callback
                     std::string ssid;
                     int apId, band = 0;
                     std::string band_G;
+                    std::string ap_standard;
 
                     snprintf(change_path, XPATH_MAX_LEN, "/%s:*//.", module_name);
                     auto it = session->get_changes_iter(change_path);
@@ -276,16 +279,17 @@ class APConfigCb : public sysrepo::Callback
 
 
                             if (parent.find("GNBDUFunction") != std::string::npos && leaf == "id"){
-                                //std::regex regex_pattern("(.*?),AP-(\\d+),band=(\\d+)");
-                                std::regex regex_pattern(R"(.*,([^,]+),AP-(\d+),band=(\d+))");
+                                std::regex regex_pattern(R"(.*,([^,]+),AP-(\d+),([^,]+),band=(\d+))");
                                 std::smatch match;
 
                                 if (std::regex_match(val, match, regex_pattern)) {
                                     ssid = match[1];
                                     apId = std::stoi(match[2]);
-                                    band = std::stoi(match[3]);
+                                    ap_standard = match[3];
+                                    band = std::stoi(match[4]);
                                     tempAPMap[apId].ap_id = apId;
                                     tempAPMap[apId].ssid = ssid;
+                                    tempAPMap[apId].ap_standard = ap_standard;
                                     tempAPMap[apId].band = band;
                                 }
                             }
