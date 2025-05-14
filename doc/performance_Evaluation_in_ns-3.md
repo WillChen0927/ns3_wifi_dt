@@ -535,3 +535,113 @@ This simulation demonstrates a **highly ideal and stable Wi-Fi uplink** scenario
 * **Zero collisions, retransmissions, or losses**
 * **Accurate and consistent throughput**
 * **Extremely low delay and jitter**
+
+
+
+
+```txt
+=== WifiPhyRxTraceHelper ===
+Total PPDUs Received: 51951
+Total Non-Overlapping PPDUs Received: 37692
+Total Overlapping PPDUs Received: 14259
+
+Successful PPDUs: 38675
+Failed PPDUs: 13276
+PPDU Dropped due to TXING: 2
+PPDU Dropped due to BUSY_DECODING_PREAMBLE: 6042
+PPDU Dropped due to PREAMBLE_DETECT_FAILURE: 2141
+PPDU Dropped due to PREAMBLE_DETECTION_PACKET_SWITCH: 30
+PPDU Dropped due to SIGNAL_DETECTION_ABORTED_BY_TX: 2
+
+Total MPDUs: 142912
+Total Successful MPDUs: 109748
+Total Failed MPDUs: 33164
+
+=== WifiCoTraceHelper (Channel Occupancy) ===
+
+---- COT for RB_1F_AP01:0 ----
+Showing duration by states: 
+IDLE:     +5.21s (52.08%)
+CCA_BUSY: +1.74s (17.35%)
+TX:       +1.44s (14.40%)
+RX:       +1.62s (16.16%)
+
+---- COT for STA_0:0 ----
+Showing duration by states: 
+IDLE:       +5.34s  (53.37%)
+CCA_BUSY:   +2.02s  (20.18%)
+TX:       +875.52ms  (8.76%)
+RX:         +1.77s  (17.70%)
+
+---- COT for STA_1:0 ----
+Showing duration by states: 
+IDLE:       +5.34s  (53.40%)
+CCA_BUSY:   +2.07s  (20.67%)
+TX:       +843.78ms  (8.44%)
+RX:         +1.75s  (17.50%)
+
+---- COT for STA_2:0 ----
+Showing duration by states: 
+IDLE:       +5.35s  (53.45%)
+CCA_BUSY:   +2.11s  (21.13%)
+TX:       +785.23ms  (7.85%)
+RX:         +1.76s  (17.56%)
+
+---- COT for STA_3:0 ----
+Showing duration by states: 
+IDLE:       +5.35s  (53.50%)
+CCA_BUSY:   +2.12s  (21.19%)
+TX:       +739.88ms  (7.40%)
+RX:         +1.79s  (17.91%)
+
+---- COT for STA_4:0 ----
+Showing duration by states: 
+IDLE:       +5.35s  (53.50%)
+CCA_BUSY:   +2.13s  (21.26%)
+TX:       +732.20ms  (7.32%)
+RX:         +1.79s  (17.92%)
+
+
+=== WifiTxStatsHelper (TX side) ===
+Duration           : 10 s
+Successful MPDUs   : 109750
+Retransmissions    : 33158
+Failed MPDUs       : 0
+
+=== FlowMonitor ===
+
+Flow 1 (10.0.0.2 → 10.0.0.1)
+  TxBytes/RxBytes : 11864880 / 11863800
+  Throughput     : 10.5471 Mbit/s
+  Lost Packets   : 0
+  Avg Delay      : 0.000823018 s
+  Avg Jitter     : 0.000451542 s
+
+Flow 2 (10.0.0.3 → 10.0.0.1)
+  TxBytes/RxBytes : 11864880 / 11850840
+  Throughput     : 10.5346 Mbit/s
+  Lost Packets   : 0
+  Avg Delay      : 0.00186326 s
+  Avg Jitter     : 0.0004996 s
+
+Flow 3 (10.0.0.4 → 10.0.0.1)
+  TxBytes/RxBytes : 11864880 / 11851920
+  Throughput     : 10.5371 Mbit/s
+  Lost Packets   : 0
+  Avg Delay      : 0.00231118 s
+  Avg Jitter     : 0.000545093 s
+
+Flow 4 (10.0.0.5 → 10.0.0.1)
+  TxBytes/RxBytes : 11864880 / 11849760
+  Throughput     : 10.535 Mbit/s
+  Lost Packets   : 0
+  Avg Delay      : 0.00338892 s
+  Avg Jitter     : 0.000586759 s
+
+Flow 5 (10.0.0.6 → 10.0.0.1)
+  TxBytes/RxBytes : 11864880 / 11845440
+  Throughput     : 10.5317 Mbit/s
+  Lost Packets   : 0
+  Avg Delay      : 0.00412967 s
+  Avg Jitter     : 0.000582852 s
+```
