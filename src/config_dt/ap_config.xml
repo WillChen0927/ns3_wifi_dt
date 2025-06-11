@@ -1,5 +1,5 @@
 <ManagedElement xmlns="urn:3gpp:sa5:_3gpp-common-managed-element">
-  <id>ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-1102</id>
+  <id>ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-1138</id>
   <attributes>
     <priorityLabel>1</priorityLabel>
   </attributes>
@@ -9,13 +9,13 @@
       <priorityLabel>1</priorityLabel>
       <gNBId>0</gNBId>
       <gNBIdLength>32</gNBIdLength>
-      <gNBDUId>1</gNBDUId>
+      <gNBDUId>0</gNBDUId>
       <gNBDUName>RB_1F_AP01</gNBDUName>
       <peeParametersList>
-        <idx>1</idx>
-        <siteLatitude>10.0</siteLatitude>
-        <siteLongitude>20.0</siteLongitude>
-        <siteAltitude>30.0</siteAltitude>
+        <idx>0</idx>
+        <siteLatitude>0.0</siteLatitude>
+        <siteLongitude>0.0</siteLongitude>
+        <siteAltitude>0.0</siteAltitude>
       </peeParametersList> 
     </attributes>
     <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
@@ -39,13 +39,13 @@
       <priorityLabel>1</priorityLabel>
       <gNBId>0</gNBId>
       <gNBIdLength>32</gNBIdLength>
-      <gNBDUId>2</gNBDUId>
+      <gNBDUId>1</gNBDUId>
       <gNBDUName>RB_1F_AP02</gNBDUName>
       <peeParametersList>
-        <idx>2</idx>
-        <siteLatitude>40.0</siteLatitude>
-        <siteLongitude>50.0</siteLongitude>
-        <siteAltitude>60.0</siteAltitude>
+        <idx>1</idx>
+        <siteLatitude>10.0</siteLatitude>
+        <siteLongitude>0.0</siteLongitude>
+        <siteAltitude>0.0</siteAltitude>
       </peeParametersList> 
     </attributes>
     <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
@@ -62,13 +62,13 @@
       <priorityLabel>1</priorityLabel>
       <gNBId>0</gNBId>
       <gNBIdLength>32</gNBIdLength>
-      <gNBDUId>3</gNBDUId>
+      <gNBDUId>2</gNBDUId>
       <gNBDUName>RB_1F_AP03</gNBDUName>
       <peeParametersList>
-        <idx>3</idx>
-        <siteLatitude>50.0</siteLatitude>
-        <siteLongitude>60.0</siteLongitude>
-        <siteAltitude>70.0</siteAltitude>
+        <idx>2</idx>
+        <siteLatitude>0.0</siteLatitude>
+        <siteLongitude>10.0</siteLongitude>
+        <siteAltitude>0.0</siteAltitude>
       </peeParametersList> 
     </attributes>
     <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">
@@ -85,13 +85,13 @@
       <priorityLabel>1</priorityLabel>
       <gNBId>0</gNBId>
       <gNBIdLength>32</gNBIdLength>
-      <gNBDUId>4</gNBDUId>
+      <gNBDUId>3</gNBDUId>
       <gNBDUName>RB_1F_AP04</gNBDUName>
       <peeParametersList>
-        <idx>4</idx>
-        <siteLatitude>40.0</siteLatitude>
-        <siteLongitude>40.0</siteLongitude>
-        <siteAltitude>40.0</siteAltitude>
+        <idx>3</idx>
+        <siteLatitude>10.0</siteLatitude>
+        <siteLongitude>10.0</siteLongitude>
+        <siteAltitude>0.0</siteAltitude>
       </peeParametersList> 
     </attributes>
     <NRCellDU xmlns="urn:3gpp:sa5:_3gpp-nr-nrm-nrcelldu">

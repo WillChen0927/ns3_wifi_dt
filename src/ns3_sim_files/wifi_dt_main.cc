@@ -8,6 +8,8 @@
 #include "ns3/udp-client-server-helper.h"
 #include "ns3/on-off-helper.h"
 #include "ns3/bridge-helper.h"
+#include "ns3/wifi-radio-energy-model-helper.h"
+#include "ns3/energy-module.h"
 
 // Netconf Library
 #include <sysrepo-cpp/Session.hpp>
@@ -37,8 +39,17 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("WiFi-DT-TEST");
 
-Time simulationTime {"2592000s"};
+Time simTime {"2592000s"};
 uint32_t payloadSize = 1472;
+
+std::map<uint32_t, Ptr<PacketSink>> sinkAppMap;  
+std::map<uint32_t, uint64_t> previousRxBytes;
+std::map<Ptr<WifiRadioEnergyModel>, double> previouspower;
+std::map<Ipv4Address, std::pair<Ptr<NetDevice>, Ptr<Node>>> ipToDeviceNodeMap;
+std::vector<Ipv4Address> ipList;
+std::vector<Ptr<WifiRadioEnergyModel>> deviceEnergyModels;
+std::map<Ptr<WifiRadioEnergyModel>, Ptr<NetDevice>> modelToDeviceMap;
+WifiCoTraceHelper coTraceHelper;
 
 static volatile int exit_application = 0;
 static void sigint_handler(int signum)
@@ -72,6 +83,7 @@ class AccessPointManager
         }
     
         void PrintAll() const {
+            std::cout << "Reicived APs configurations:" << std::endl;
             for (const auto& ap : ap_list) {
                 std::cout << "AP ID: " << ap.ap_id << ", Name: " << ap.ap_name
                           << ", SSID: " << ap.ssid << ", Standard: " << ap.ap_standard 
@@ -82,7 +94,7 @@ class AccessPointManager
                           << ", CH2: " << ap.channel_band5
                           << std::endl;
             }
-            std::cout << "============================================================" << std::endl;
+            std::cout << std::string(150, '-') << std::endl;
         }
     
         const std::vector<AccessPoint>& GetList() const {
@@ -254,14 +266,14 @@ class ns3sim
 
                 //Mobility model
                 Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-                positionAlloc->Add(Vector(ns3_ap.position.x, ns3_ap.position.y, ns3_ap.position.z));
+                positionAlloc->Add(Vector(ns3_ap.location.x, ns3_ap.location.y, ns3_ap.location.z));
 
                 MobilityHelper ap_mobility;
                 ap_mobility.SetPositionAllocator(positionAlloc);
                 ap_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
                 ap_mobility.Install(apNode);
 
-
+                //Wifi standard
                 WifiHelper wifi;
                 if (ns3_ap.ap_standard == "802.11ax") {
                     wifi.SetStandard(WIFI_STANDARD_80211ax);
@@ -273,27 +285,247 @@ class ns3sim
                     wifi.SetStandard(WIFI_STANDARD_80211g);
                 } else if (ns3_ap.ap_standard == "802.11b") {
                     wifi.SetStandard(WIFI_STANDARD_80211b);
-                } else {
-                    std::cerr << "Unsupported WiFi standard: " << ns3_ap.ap_standard << std::endl;
-                    continue;
                 }
 
-                wifi.SetRemoteStationManager("ns3::MinstrelWifiManager");
+                // Set remote station manager
+                wifi.SetRemoteStationManager("ns3::IdealWifiManager");
                 Ssid ssid = Ssid(ns3_ap.ssid);
 
+                // Create the channel and PHY
                 YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
                 channel.AddPropagationLoss("ns3::LogDistancePropagationLossModel");
                 channel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
-                YansWifiPhyHelper yansPhy24G;
-                phy.SetChannel(channel.Create());
+                channel.AddPropagationLoss("ns3::RangePropagationLossModel");
+                Config::SetDefault("ns3::RangePropagationLossModel::MaxRange", DoubleValue(5));
 
-                WifiMacHelper mac;
+                //Install netDevice
+                if (ns3_ap.band == 1) {
+                    YansWifiPhyHelper yansPhy24;
+                    yansPhy24.SetChannel(channel.Create());
 
+                    yansPhy24.Set("Antennas", UintegerValue(4));
+                    yansPhy24.Set("MaxSupportedTxSpatialStreams", UintegerValue(4));
+                    yansPhy24.Set("MaxSupportedRxSpatialStreams", UintegerValue(4));
 
+                    if (ns3_ap.ap_standard == "802.11ax") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(24.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(24.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11n") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(18.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(18.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11ac") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(20.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(20.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    }
 
-                //std::cout << "AP ID: " << ns3_ap.ap_id << std::endl;
+                    std::ostringstream channelValue;
+                    channelValue << "{" << ns3_ap.channel_band24 << ", 20, BAND_2_4GHZ, 0}";
+                    yansPhy24.Set("ChannelSettings", StringValue(channelValue.str()));
+
+                    WifiMacHelper mac;
+                    mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
+                    NetDeviceContainer apDevice = wifi.Install(yansPhy24, mac, apNode);
+                    apDevices.Add(apDevice);
+
+                } else if (ns3_ap.band == 2) {
+                    YansWifiPhyHelper yansPhy5;
+                    yansPhy5.SetChannel(channel.Create());
+
+                    yansPhy5.Set("Antennas", UintegerValue(4));
+                    yansPhy5.Set("MaxSupportedTxSpatialStreams", UintegerValue(4));
+                    yansPhy5.Set("MaxSupportedRxSpatialStreams", UintegerValue(4));
+
+                    if (ns3_ap.ap_standard == "802.11ax") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(24.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(24.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11n") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(18.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(18.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11ac") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(20.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(20.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    }
+
+                    std::string channelStr = Get5GChannelConfig(ns3_ap.channel_band5);
+                    yansPhy5.Set("ChannelSettings", StringValue(channelStr));
+
+                    WifiMacHelper mac;
+                    mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
+                    NetDeviceContainer apDevice = wifi.Install(yansPhy5, mac, apNode);
+                    apDevices.Add(apDevice);
+
+                } else if (ns3_ap.band == 3) {
+                    YansWifiPhyHelper yansPhy24;
+                    yansPhy24.SetChannel(channel.Create());
+
+                    yansPhy24.Set("Antennas", UintegerValue(4));
+                    yansPhy24.Set("MaxSupportedTxSpatialStreams", UintegerValue(4));
+                    yansPhy24.Set("MaxSupportedRxSpatialStreams", UintegerValue(4));
+
+                    if (ns3_ap.ap_standard == "802.11ax") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(20.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(20.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11n") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(18.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(18.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11ac") {
+                        yansPhy24.Set("TxPowerStart", DoubleValue(19.0));
+                        yansPhy24.Set("TxPowerEnd", DoubleValue(19.0));
+                        yansPhy24.Set("TxPowerLevels", UintegerValue(1));
+                    }
+
+                    std::ostringstream channelValue;
+                    channelValue << "{" << ns3_ap.channel_band24 << ", 20, BAND_2_4GHZ, 0}";
+                    yansPhy24.Set("ChannelSettings", StringValue(channelValue.str()));
+
+                    WifiMacHelper mac;
+                    mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
+                    NetDeviceContainer apDevice_24G = wifi.Install(yansPhy24, mac, apNode);
+                    apDevices.Add(apDevice_24G);
+
+                    YansWifiPhyHelper yansPhy5;
+                    yansPhy5.SetChannel(channel.Create());
+
+                    yansPhy5.Set("Antennas", UintegerValue(4));
+                    yansPhy5.Set("MaxSupportedTxSpatialStreams", UintegerValue(4));
+                    yansPhy5.Set("MaxSupportedRxSpatialStreams", UintegerValue(4));
+
+                    if (ns3_ap.ap_standard == "802.11ax") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(30.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(30.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11n") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(18.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(18.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    } else if (ns3_ap.ap_standard == "802.11ac") {
+                        yansPhy5.Set("TxPowerStart", DoubleValue(20.0));
+                        yansPhy5.Set("TxPowerEnd", DoubleValue(20.0));
+                        yansPhy5.Set("TxPowerLevels", UintegerValue(1));
+                    }
+
+                    std::string channelStr = Get5GChannelConfig(ns3_ap.channel_band5);
+                    yansPhy5.Set("ChannelSettings", StringValue(channelStr));
+
+                    NetDeviceContainer apDevice_5G = wifi.Install(yansPhy5, mac, apNode);
+                    apDevices.Add(apDevice_5G);
+                }
             }
-            
+
+            //Internet stack
+            InternetStackHelper stack;
+            stack.Install(apNodes);
+
+            //Assign IP addresses
+            Ipv4AddressHelper address;
+            address.SetBase("10.1.0.0", "255.255.240.0");
+            Ipv4InterfaceContainer apInterface = address.Assign(apDevices);
+
+            //energy model
+            BasicEnergySourceHelper basicSourceHelper;
+            basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(1e9));
+            WifiRadioEnergyModelHelper radioEnergyHelper;
+            radioEnergyHelper.Set("IdleCurrentA", DoubleValue(0.273));
+            radioEnergyHelper.Set("RxCurrentA", DoubleValue(0.313));
+            radioEnergyHelper.Set("SleepCurrentA", DoubleValue(0.033));
+            //radioEnergyHelper.Set("TxCurrentA", DoubleValue(0.380));
+            radioEnergyHelper.SetTxCurrentModel("ns3::LinearWifiTxCurrentModel",
+                                        "Voltage",DoubleValue(3.0),
+                                        "IdleCurrent",DoubleValue(0.273),
+                                        "Eta",DoubleValue(0.1));
+                                        
+            for (uint32_t i = 0; i < apNodes.GetN(); ++i)
+            {
+                Ptr<Node> node = apNodes.Get(i);
+                energy::EnergySourceContainer sources = basicSourceHelper.Install(node);
+                Ptr<energy::EnergySource> source = sources.Get(0);
+
+                for (uint32_t j = 0; j < node->GetNDevices()-1; ++j)
+                {
+                    Ptr<NetDevice> dev = node->GetDevice(j);
+                    Ptr<WifiNetDevice> wifiDev = DynamicCast<WifiNetDevice>(dev);
+                    if (wifiDev)
+                    {
+                        energy::DeviceEnergyModelContainer deviceModel = radioEnergyHelper.Install(wifiDev, source);
+                        Ptr<WifiRadioEnergyModel> model = DynamicCast<WifiRadioEnergyModel>(deviceModel.Get(0));
+                        deviceEnergyModels.push_back(model);
+                        modelToDeviceMap[model] = dev;
+                    }
+                    else
+                    {
+                        std::cout << "Skipped: device is not WifiNetDevice or is null" << std::endl;
+                    }
+                }
+            }
+
+            //Application
+            // uint16_t port = 9;
+            // PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+            // ApplicationContainer sinkApp = sink.Install(apNodes);
+            // sinkApp.Start(Seconds(0.1));
+            // sinkApp.Stop(Seconds(simTime));
+
+            // uint16_t port = 777;
+            // PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+            // ApplicationContainer sinkApp = sink.Install(apNodes);
+            // sinkApp.Start(Seconds(0.1));
+            // sinkApp.Stop(simTime);
+            ApplicationContainer sinkApps;
+            uint16_t port = 777;
+            for (uint32_t i = 0; i < apNodes.GetN(); ++i)
+            {
+                Ptr<Node> node = apNodes.Get(i);
+                Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+                for (uint32_t j = 0; j < node->GetNDevices(); ++j)
+                {
+                    Ptr<NetDevice> dev = node->GetDevice(j);
+                    if (DynamicCast<LoopbackNetDevice>(dev)) 
+                    {
+                        continue;
+                    }
+                    int32_t interfaceIndex = ipv4->GetInterfaceForDevice(dev);
+                    Ipv4InterfaceAddress iaddr = ipv4->GetAddress(interfaceIndex, 0);
+                    Ipv4Address ipAddr = iaddr.GetLocal();
+
+                    ipToDeviceNodeMap[ipAddr] = std::make_pair(dev, node);
+                    ipList.push_back(ipAddr);
+
+                    PacketSinkHelper sink("ns3::TcpSocketFactory",InetSocketAddress(ipAddr, port));
+                    ApplicationContainer app = sink.Install(node);
+                    app.Start(Seconds(0.1));
+                    app.Stop(simTime);
+
+                    sinkApps.Add(app);
+                }
+            }
+
+            for(uint32_t i = 0; i < sinkApps.GetN(); ++i)
+            {
+                sinkAppMap[i] = DynamicCast<PacketSink>(sinkApps.Get(i));
+            }
+
+            coTraceHelper.Enable (apDevices);
+            coTraceHelper.Start(Seconds(0.1));
+            coTraceHelper.Stop(simTime);
+
+            Simulator::Schedule(Seconds(1), &ns3sim::show_deployed_ap_info, apNodes);
+            Simulator::Schedule(Seconds(60), &ns3sim::show_throughput, sinkAppMap, ipToDeviceNodeMap, ipList);
+            Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
+            Simulator::Schedule(Seconds(60), &ns3sim::show_energy, deviceEnergyModels, modelToDeviceMap);
+
+
+            Simulator::Stop(simTime);
+            Simulator::Run();
+            Simulator::Destroy();
+
             // Simulator::Schedule(Seconds(1), &ns3sim::count);
             // Simulator::Schedule(Seconds(1), &ns3sim::printAP, apMgr);
             // Simulator::Stop(Seconds(11));
@@ -302,20 +534,138 @@ class ns3sim
             // std::cout << "Simulation finished." << std::endl;
         }
 
-        static void count()
+    private:
+        static std::string Get5GChannelConfig(int inputChannel)
         {
-            static uint32_t count = 0;
-            std::cout << "count: " << count++ << std::endl;
-            Simulator::Schedule(Seconds(1), &ns3sim::count);
+            std::map<int, std::vector<int>> channelGroups = {
+                {42,  {36, 40, 44, 48}},
+                {58,  {52, 56, 60, 64}},
+                {106, {100, 104, 108, 112}},
+                {122, {116, 120, 124, 128}},
+                {138, {132, 136, 140, 144}},
+                {155, {149, 153, 157, 161}}
+            };
+
+            for (const auto& [group, channels] : channelGroups)
+            {
+                for (size_t i = 0; i < channels.size(); ++i)
+                {
+                    if (channels[i] == inputChannel)
+                    {
+                        std::ostringstream channelValue;
+                        channelValue << "{" << group << ", 80, BAND_5GHZ, " << i << "}";
+                        return channelValue.str();
+                    }
+                }
+            }
+
+            return "Invalid channel";
         }
 
-        static void printAP(const AccessPointManager* apMgr)
+        static void show_deployed_ap_info(const NodeContainer &nodes)
         {
-            const auto& list = apMgr->GetList();
-            for (const auto& ap : list)
+            std::string name;
+            Vector position;
+            uint8_t ChannelWidth;
+            uint8_t ChannelNumber = 0;
+            uint16_t Frequency;
+            WifiStandard Standard = WIFI_STANDARD_80211a;
+            Ssid dev_ssid;
+
+            std::cout << "Deployed APs infomations:" << std::endl;
+            for (uint32_t i = 0; i < nodes.GetN(); ++i)
             {
-                std::cout << "AP ID: " << ap.ap_id << std::endl;
+                Ptr<Node> node = nodes.Get(i);
+                name = Names::FindName(node);
+                position = node->GetObject<MobilityModel>()->GetPosition();
+                std::cout << "Node Name: " << name 
+                          << ", Position: (" << position.x << ", " 
+                          << position.y << ", " << position.z << ")" << std::endl;
+
+                for (uint32_t j = 0; j < node->GetNDevices()-1; ++j)
+                {
+                    Ptr<NetDevice> dev = node->GetDevice(j);
+                    std::cout << "   Device[" << j << "]: " << dev->GetInstanceTypeId().GetName();
+
+                    Ptr<WifiNetDevice> wifiDev = DynamicCast<WifiNetDevice>(dev);
+                    Ptr<WifiPhy> phy = wifiDev->GetPhy();
+                    ChannelWidth = phy->GetChannelWidth();
+                    Frequency = phy->GetFrequency();
+                    uint8_t Primary20Index = phy->GetPrimary20Index();
+                    if (Frequency >= 5000)
+                    {
+                        ChannelNumber = phy->GetChannelNumber() - 6 + Primary20Index*4;
+                    }
+                    else
+                    {
+                        ChannelNumber = phy->GetChannelNumber();
+                    }
+                    Standard = phy->GetStandard();
+
+                    Ptr<WifiMac> dev_mac = wifiDev->GetMac();
+                    dev_ssid = dev_mac->GetSsid();
+                    
+                    std::cout << ", " << dev_ssid << ", Standard: " << Standard << ", Channel Width: " 
+                          << static_cast<int>(ChannelWidth) << " MHz, BAND: " 
+                          << ((Frequency >= 5000) ? "5" : "2.4") << " GHz, Channel Number: " 
+                          << static_cast<int>(ChannelNumber) << std::endl;
+                }
             }
+        }
+
+        static void show_throughput(const std::map<uint32_t, Ptr<PacketSink>>& sinkAppMap, 
+                                    const std::map<Ipv4Address, std::pair<Ptr<NetDevice>, Ptr<Node>>>& ipToDeviceNodeMap,
+                                    const std::vector<Ipv4Address>& ipList)
+        {
+            std::cout << std::string(150, '=') << std::endl;
+            for (const auto &sinkApp : sinkAppMap)
+            {
+                uint64_t totalRx = sinkApp.second -> GetTotalRx();
+                uint64_t currentRx = totalRx - previousRxBytes[sinkApp.first];
+                previousRxBytes[sinkApp.first] = totalRx;
+                double throughput = (currentRx * 8.0) / 60 * 1000.0; // Convert to Kbps
+                Ipv4Address ip = ipList[sinkApp.first];
+                auto it = ipToDeviceNodeMap.find(ip);
+                Ptr<NetDevice> dev = it->second.first;
+                Ptr<Node> node = it->second.second;
+                std::string nodeName = Names::FindName(node);
+                std::cout << "Node Name: " << nodeName 
+                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "5 GHz" : "2.4 GHz")
+                          << ", Throughput: " << throughput 
+                          << " Kbps" << std::endl;
+                // std::cout << "Node Name: " << nodeName 
+                //           << ", Received Bytes: " << totalRx 
+                //           << ", Current Received Bytes: " << currentRx 
+                //           << ", Previous Received Bytes: " << previousRxBytes[sinkApp.first] 
+                //           << ", Throughput: " << throughput 
+                //           << " Kbps" << std::endl;
+            }
+            Simulator::Schedule(Seconds(60), &ns3sim::show_throughput, sinkAppMap, ipToDeviceNodeMap, ipList);
+        }
+
+        static void show_CO()
+        {
+            //123
+            coTraceHelper.PrintStatistics (std::cout);
+            coTraceHelper.Reset();
+            Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
+        }
+
+        static void show_energy(const std::vector<Ptr<WifiRadioEnergyModel>>& deviceEnergyModels, const std::map<Ptr<WifiRadioEnergyModel>, Ptr<NetDevice>>& modelToDeviceMap)
+        {
+            std::cout << "Energy consumption of devices:" << std::endl;
+            for (auto model : deviceEnergyModels)
+            {
+                double TotalenergyConsumed = model->GetTotalEnergyConsumption();
+                double currentenergyConsumed = TotalenergyConsumed - previouspower[model];
+                previouspower[model] = TotalenergyConsumed;
+                Ptr<NetDevice> dev = modelToDeviceMap.find(model)->second;
+                Ptr<Node> node = dev->GetNode();
+                std::cout << "    Node Name: " << Names::FindName(node) 
+                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "5 GHz" : "2.4 GHz") 
+                          << ", Energy Consumed: " << currentenergyConsumed << " J" << std::endl;
+            }
+            Simulator::Schedule(Seconds(60), &ns3sim::show_energy, deviceEnergyModels, modelToDeviceMap);
         }
 };
 
