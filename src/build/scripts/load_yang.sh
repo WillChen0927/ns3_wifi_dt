@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#initialize globle variables
+#initialize global variables
 CURRENT_DIR=$PWD
 ROOT_DIR=$CURRENT_DIR/../../
 
