@@ -68,9 +68,7 @@
 
 ## Reference
 
-* [ns-3 Wi-Fi Module User Documentation](https://www.nsnam.org/docs/release/3.39/models/html/wifi-user.html?highlight=setstandard)
-* [ns-3 Documentation](https://www.nsnam.org/docs/release/3.18/doxygen/index.html) **(path : ns-3 > Classes > Class List > ns3 > ....)**
-
+* [ns-3 Wi-Fi Module User Documentation](https://www.nsnam.org/docs/release/3.44/models/html/wifi.html)
 
 ## 1. WifiNetDevice create steps overview
 ns-3 Wifi module structure : 

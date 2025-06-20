@@ -7,6 +7,18 @@ Please make sure all dependencies are installed before proceeding with execution
 ## Execution Steps
 This section describes how to run the simulation program, including the order of scripts, required input formats, and tips for validating the output.
 
+## NS-3 Related Notes
+
+### [ns3_introduction.md](./ns3_introduction.md)
+
+### [ns3_installation_guide.md](./ns3_installation_guide.md)
+
+### [ns3_wifi_use_documentation.md](./ns3_wifi_use_documentation.md)
+
+### [ns-3 Doxygen API documentation](https://www.nsnam.org/docs/release/3.44/doxygen/index.html)
+
+### [ns-3 Wi-Fi Module official documentation (Release 3.44)](https://www.nsnam.org/docs/release/3.44/models/html/wifi.html)
+
 ## Main Program Insights (Developer Notes)
 
 ## Appendix: Reference Scripts
