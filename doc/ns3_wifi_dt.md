@@ -21,6 +21,11 @@ This section describes how to run the simulation program, including the order of
 
 ## Main Program Insights (Developer Notes)
 
+
+
+### [AP can't recieve traffic](https://hackmd.io/y0cCoDv6R6Cg6Fqxdr8Omg?view#AP-cant-recieve-traffic)
+
+
 ## Appendix: Reference Scripts
 
 This section lists the key scripts required during the execution process. 
