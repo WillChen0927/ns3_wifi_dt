@@ -4,6 +4,41 @@
 This section provides step-by-step instructions to set up the development and runtime environment for the project. 
 Please make sure all dependencies are installed before proceeding with execution.
 
+### Git Clone
+To get the project of source code.
+```
+git clone https://github.com/bmw-ece-ntust/ns3_wifi_dt.git
+```
+
+### Install NS-3
+You can quickly install NS-3 by running the provided [installation script](#script-ns3_installsh), or refer to [ns3_installation_guide.md](#ns3_installation_guidemd) for detailed instructions.
+```
+cd ns3_wifi_dt/src/build/scripts/
+sudo ./ns3_install.sh
+```
+After run the `ns3_install.sh`, run `build_ns3.sh` to build NS-3.
+```
+./build_ns3.sh
+```
+After installation, run [`cp_to_ns3_scratch.sh`]() to copy the WiFi Digital Twin simulation program into the ns-3 directory. This allows you to execute the program directly within the ns-3 environment.
+(Programs placed in the scratch/ directory are automatically compiled when executed.)
+```
+./cp_to_ns3_scratch.sh
+```
+
+### Install NETCONF
+You can install the NETCONF-related tools by running the provided [installation script](#script-install_netconfsh). 
+For detailed instructions, please refer to [HERE](#script-install_netconfsh).
+```
+cd ns3_wifi_dt/src/build/scripts/
+sudo ./install_netconf.sh
+```
+
+### NETCONF Setting
+Some preliminary setup is required to enable the NETCONF server to receive configuration data.
+
+#### 
+
 ## Execution Steps
 This section describes how to run the simulation program, including the order of scripts, required input formats, and tips for validating the output.
 
