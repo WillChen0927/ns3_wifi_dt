@@ -11,6 +11,11 @@ In this project, I implemented a RESTful API server within an ns-3 simulation. T
     - [2. JSON format config file](#2-json-format-config-file)
     - [3.Send config file](#3send-config-file)
     - [4. Real-Time Interaction](#4-real-time-interaction)
+    - [New Configuration Format (v2)](#new-configuration-format-v2)
+    - [Appensix: Pistache framework](#appensix-pistache-framework)
+      - [Pistache vs. httplib: Key Differences](#pistache-vs-httplib-key-differences)
+      - [Summary](#summary)
+
 
 
 ## What is a RESTful API?
@@ -154,3 +159,40 @@ void StartRestServer() {
 * Next second, the STAs will be add into the simulation.
 
 ![image](./images/added_into_sim.png)
+
+
+### [New Configuration Format (v2)](https://hackmd.io/y0cCoDv6R6Cg6Fqxdr8Omg?view#Modify-STA-config-file)
+
+
+### Appensix: Pistache framework
+I Switched from Pistache to httplib
+
+When I first attempted to build a RESTful API server in C++, I started with \[**Pistache**], a powerful HTTP framework offering features like routing, middleware support, and multithreading. However, during the installation and integration process, I encountered several major difficulties:
+
+* **Complex installation**: Pistache uses **Meson** instead of the more common CMake, requiring additional tools like `ninja`, `meson`, and `gmock` to be installed manually.
+* **High dependency overhead**: The build system failed due to missing dependencies like `RapidJSON` and `GTest`, and even after a successful `make`, the installation was blocked with the message "Please use Meson to install Pistache."
+* **Hard to integrate with ns-3**: ns-3 uses CMake as its build system, so manually linking the Pistache headers and libraries caused compiler errors (e.g., `#include <pistache/endpoint.h>` not found).
+
+Due to these issues, I switched to the **cpp-httplib** framework, a single-header C++ HTTP library. The experience was much smoother:
+
+* Only requires downloading a single `.hpp` file.
+* No external dependencies.
+* Easy to integrate with ns-3 (just add `#include "httplib.h"` in your code).
+
+#### Pistache vs. httplib: Key Differences
+
+| Feature               | Pistache                                       | cpp-httplib                         |
+| --------------------- | ---------------------------------------------- | ----------------------------------- |
+| Installation          | Requires full build with Meson + Ninja + GTest | Header-only; just download one file |
+| External Dependencies | High (RapidJSON, GTest, pthreads, Meson)       | Minimal to none                     |
+| Routing Support       | Built-in router like Express                 | Manual path handling via if/else  |
+| Multithreading        | Built-in thread pool                         | Single-threaded by default        |
+| Ease of Use           | Medium to High                                 | Very easy                           |
+| Best Use Case         | Production-level REST APIs                     | Rapid prototyping, embedded systems |
+| ns-3 Integration      | Complicated, fragile build integration       | Simple and reliable               |
+
+---
+
+#### Summary
+
+While **Pistache** is more powerful and feature-rich, it comes at the cost of installation complexity and dependency management. For simpler RESTful API needs—especially when integrating with simulation environments like **ns-3**—a lightweight header-only library like **cpp-httplib** offers a faster and more developer-friendly experience.
