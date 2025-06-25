@@ -37,10 +37,40 @@ sudo ./install_netconf.sh
 ### NETCONF Setting
 Some preliminary setup is required to enable the NETCONF server to receive configuration data.
 
-#### 
+#### Install YANG models
+In this step, we will use an automated script to install a set of required 3GPP YANG modules, which are essential for the subsequent system setup and configuration.
+This step only needs to be performed once and is intended to import the standard 3GPP YANG models into the local sysrepo environment.
+```
+sudo ./load_yang.sh
+```
+
+After running the script, you can verify that the YANG modules were installed successfully by executing the `sudo sysrepoctl -l` command. This will list all the modules currently registered in sysrepo.
+
+
+#### Config NETCONF server and YANG models
+
+In this step, we import the necessary Netconf configuration files (e.g., access control and server settings) and update the file ownership and permissions for the installed 3GPP YANG modules. Before running this script, make sure the YANG modules have been installed and that you have `sudo` privileges. The script sets the owner of each module to the current login user and applies `666` permissions to enable read/write access for subsequent operations.
+
+This script is part of the initial setup process to ensure proper access control and server configuration in the sysrepo environment.
+
+```
+sudo ./yang_config.sh
+```
+
+#### clear sysrepo (if needed)
+If you encounter unexpected errors while running the Netconf Server—such as module loading failures or corrupted sysrepo data—you may consider executing the following recovery script. 
+This script cleans the sysrepo build environment and reinstalls Netopeer2 to help restore the system to a working state. 
+
+```
+sudo ./sysrepo_clean.sh
+```
+Note: This is not a mandatory step in the installation process and should only be used when server issues occur.
+After you run `yang_config.sh` you need to run `load_yang.sh` and `yang_config.sh` again.
 
 ## Execution Steps
 This section describes how to run the simulation program, including the order of scripts, required input formats, and tips for validating the output.
+
+#### To be update
 
 ## NS-3 Related Notes
 
@@ -54,11 +84,9 @@ This section describes how to run the simulation program, including the order of
 
 ### [ns-3 Wi-Fi Module official documentation (Release 3.44)](https://www.nsnam.org/docs/release/3.44/models/html/wifi.html)
 
-## Main Program Insights (Developer Notes)
+## Main Program Insights 
 
-
-
-### [AP can't recieve traffic](https://hackmd.io/y0cCoDv6R6Cg6Fqxdr8Omg?view#AP-cant-recieve-traffic)
+### ([Developer Notes](https://hackmd.io/y0cCoDv6R6Cg6Fqxdr8Omg?view#Developer-Notes))
 
 
 ## Appendix: Reference Scripts
