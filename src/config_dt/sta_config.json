@@ -1,31 +1,27 @@
 {
   "Minute_01": {
     "DateTime": "2025-04-22T15:38:56",
-    "numberOfSTA": 4,
+    "numberOfSTA": 3,
     "STAConfig": [
       {
         "STAName": "m11302229",
+        "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP01",
         "radio band": "2.4GHz",
         "TXbytes": 10000000,
         "dataDirection": "UL"
       },
       {
-        "STAName": "m11302230",
-        "connectedofAP": "RB_1F_AP01",
-        "radio band": "5GHz",
-        "TXbytes": 30000000,
-        "dataDirection": "UL"
-      },
-      {
         "STAName": "m11302231",
-        "connectedofAP": "RB_1F_AP01",
+        "ssid": "ntust-peap",
+        "connectedofAP": "RB_1F_AP04",
         "radio band": "2.4GHz",
         "TXbytes": 10000000,
         "dataDirection": "UL"
       },
       {
         "STAName": "m11302232",
+        "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP02",
         "radio band": "2.4GHz",
         "TXbytes": 10000000,
@@ -35,23 +31,8 @@
   },
   "Minute_02": {
     "DateTime": "2025-04-22T15:39:56",
-    "numberOfSTA": 2,
-    "STAConfig": [
-      {
-        "STAName": "m11302233",
-        "connectedofAP": "RB_1F_AP03",
-        "radio band": "5GHz",
-        "TXbytes": 10000000,
-        "dataDirection": "UL"
-      },
-      {
-        "STAName": "m11302234",
-        "connectedofAP": "RB_1F_AP04",
-        "radio band": "5GHz",
-        "TXbytes": 30000000,
-        "dataDirection": "UL"
-      }
-    ]
+    "numberOfSTA": 0,
+    "STAConfig": []
   },
   "Minute_03": {
     "DateTime": "2025-04-22T15:40:56",
