@@ -20,7 +20,7 @@ The goal of this integration is to convert parameters and values from the TEIV d
 ---
 
 ## System Architecture
-![wifi-DT-architecture](./images/wifi_dt_architecture.png)
+![wifi-DT-architecture](../images/wifi_dt_architecture.png)
 
 ## Steps:
 
@@ -34,7 +34,7 @@ In this note, steps 1 to 4 guide us through the installation and configuration o
 * **Use PostgreSQL management tools**
 To store the AP configuration in the TEIV system, allowing the rApp to convert it into an XML configuration file, we can use PostgreSQL management tools to manually save the data.
 
-![image](./images/teiv_parameters.png)
+![image](../images/teiv_parameters.png)
 
 ---
 
@@ -139,7 +139,7 @@ static bool Send(const std::string& eventJson, const std::string& url) {
 ### 4. Run ns-3 DT
 When executing the ns-3 DT program, it will open a NETCONF session, subscribe to the YANG model, and send a PNF Registration VES event to the SMO.
 
-![image](./images/send_pnf_event.png)
+![image](../images/send_pnf_event.png)
 
 ---
 
@@ -148,4 +148,4 @@ The rApp will use the `sourceName` from the VES event to retrieve the correspond
 
 Upon receiving the configuration, the ns-3 server will parse it and deploy the APs according to the specified settings.
 
-![image](./images/ns3_received.png)
+![image](../images/ns3_received.png)

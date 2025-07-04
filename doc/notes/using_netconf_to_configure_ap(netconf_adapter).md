@@ -373,7 +373,7 @@ edit-config --target running --config=ap-config.xml
 ```
 
 #### ns-3 receive
-![image](./images/ns3_received.png)
+![image](../images/ns3_received.png)
 
 
 

@@ -320,10 +320,10 @@ The file where the parameter is located: `_3gpp-nr-nrm-nrcelldu.yang`, `_3gpp-co
 
 
 ### Parameters used by Jerry
-![image](./images/parameters_used_by_jerry.png)
+![image](../images/parameters_used_by_jerry.png)
 
 ### Parameters from Aruba Web Crawling(by Tori)
-![image2](./images/parameters_from_aruba_web_crawling.png)
+![image2](../images/parameters_from_aruba_web_crawling.png)
 
 #### [Details of Aruba AP Parameter](https://hackmd.io/@RayCheng/BkubI8-Oj#Web_AP_Data-11)
 

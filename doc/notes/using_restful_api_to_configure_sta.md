@@ -12,7 +12,7 @@ In this project, I implemented a RESTful API server within an ns-3 simulation. T
     - [3.Send config file](#3send-config-file)
     - [4. Real-Time Interaction](#4-real-time-interaction)
     - [New Configuration Format (v2)](#new-configuration-format-v2)
-    - [Appensix: Pistache framework](#appensix-pistache-framework)
+    - [Appendix: Pistache framework](#appendix-pistache-framework)
       - [Pistache vs. httplib: Key Differences](#pistache-vs-httplib-key-differences)
       - [Summary](#summary)
 
@@ -152,19 +152,19 @@ void StartRestServer() {
 
 
 ### 4. Real-Time Interaction
-* In a ns-3 program, I have two threads, one for listening REST requests and another for runing ns-3 simulation.
+* In a ns-3 program, I have two threads, one for listening REST requests and another for running ns-3 simulation.
 * When the REST server receives a REST request, the log prints the contents of the file
 
-![image](./images/rest_receive.png)
+![image](../images/rest_receive.png)
 * Next second, the STAs will be add into the simulation.
 
-![image](./images/added_into_sim.png)
+![image](../images/added_into_sim.png)
 
 
 ### [New Configuration Format (v2)](https://hackmd.io/y0cCoDv6R6Cg6Fqxdr8Omg?view#Modify-STA-config-file)
 
 
-### Appensix: Pistache framework
+### Appendix: Pistache framework
 I Switched from Pistache to httplib
 
 When I first attempted to build a RESTful API server in C++, I started with \[**Pistache**], a powerful HTTP framework offering features like routing, middleware support, and multithreading. However, during the installation and integration process, I encountered several major difficulties:

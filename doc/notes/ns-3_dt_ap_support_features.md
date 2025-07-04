@@ -2,7 +2,7 @@
 
 ---
 
-![image](../doc/images/wifi_dt_architecture.png)
+![image](../../doc/images/wifi_dt_architecture.png)
 
 ### 📌 Objective
 
@@ -140,7 +140,7 @@ show_energy()
 
 This simulation provides a versatile and extensible foundation for studying Wi-Fi AP behavior in ns-3, including energy efficiency and throughput performance under various PHY and MAC configurations. The logging functions offer deep visibility into runtime characteristics, making it suitable for experimentation with realistic network deployments or digital twin integration.
 
-### Appedix
+### Appendix
 
 #### [Videos](https://youtu.be/u_YB286oYyg)
 
