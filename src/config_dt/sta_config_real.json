@@ -1,0 +1,106 @@
+{
+  "Minute_01": {
+    "DateTime": "2025-06-30T10:05:14",
+    "numberOfSTA": 0,
+    "STAConfig": []
+  },
+  "Minute_02": {
+    "DateTime": "2025-06-30T10:06:14",
+    "numberOfSTA": 11,
+    "STAConfig": [
+      {
+        "STAName": "b11109012_ipad",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 1236,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11102005_un",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 471,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11102005_win8",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 984,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11109012_un",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 2142,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11209028_un",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 41460,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11109012_linux",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP01",
+        "radio band": "5GHz",
+        "TXbytes": 396,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11130226_un",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP02",
+        "radio band": "5GHz",
+        "TXbytes": 15060,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11007116_iphone",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP02",
+        "radio band": "5GHz",
+        "TXbytes": 19560,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11108008_un",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP02",
+        "radio band": "5GHz",
+        "TXbytes": 550200,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11108008_un2",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP02",
+        "radio band": "5GHz",
+        "TXbytes": 4896,
+        "dataDirection": "UL"
+      },
+      {
+        "STAName": "b11130226_win10",
+        "ssid": "ntust-peap",
+        "connectedofAP": "D1_4F_AP02",
+        "radio band": "5GHz",
+        "TXbytes": 30660,
+        "dataDirection": "UL"
+      }
+    ]
+  },
+  "Minute_03": {
+    "DateTime": "2025-06-30T10:07:14",
+    "numberOfSTA": 0,
+    "STAConfig": []
+  }
+}
