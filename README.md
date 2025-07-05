@@ -19,10 +19,26 @@ So far, only partial functionality has been implemented.
 ### Synchronization AP
 ![image](./doc/images/wifi_dt_synchronization_ap_msc.png)
 
+
+## How to use it?
+
+
+### Installation Guide
+For quick install all related tools or library.
+```shell
+sudo ./install_all.sh
+```
+
+For installation details, please refer to the [wifi dt installation guide](./doc/wifi_dt_installation_guide.md).
+
+### User Guide
+TBD: Because the program do not finish yet, I will update user guide after all done.
+
 ## Folder Structure
 ```plaintext
 ns3_wifi_dt/
 ├── doc/                        # Project documentation
+│   ├── notes                   # Personal notes for records or references
 ├── sandbox/                    # Experimental or temporary code for testing
 ├── src/
 │   ├── build                   # Files for building environment
