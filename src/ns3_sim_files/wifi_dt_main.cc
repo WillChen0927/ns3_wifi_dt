@@ -322,7 +322,7 @@ class RestfulServer
                         g_allStaConfigs[minuteKey] = minuteData;
                     }
 
-                    std::cout << "---------------------------------------------------------------------------\n";
+                    std::cout << std::string(150, '-') << std::endl;
                     std::cout << "[REST] Received REST upload.\n";
                     
                     for (const auto& [minuteKey, config] : g_allStaConfigs) {
@@ -342,7 +342,7 @@ class RestfulServer
                         }
                     }
                     
-                    std::cout << "---------------------------------------------------------------------------\n";
+                    std::cout << std::string(150, '-') << std::endl;
                     g_triggerSend = true;
                     res.set_content("{\"status\": \"multi-minute ok\"}", "application/json");
 
@@ -610,9 +610,10 @@ class ns3sim
             coTraceHelper.Stop(simTime);
 
             Simulator::Schedule(Seconds(1), &ns3sim::show_deployed_ap_info);
-            Simulator::Schedule(Seconds(60), &ns3sim::show_throughput);
+            // Simulator::Schedule(Seconds(60), &ns3sim::show_throughput);
+            // Simulator::Schedule(Seconds(60), &ns3sim::show_energy);
+            Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
             Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
-            Simulator::Schedule(Seconds(60), &ns3sim::show_energy);
             //Simulator::Schedule(Seconds(5), &ns3sim::test);
             Simulator::Schedule(Seconds(60), &ns3sim::sta_config);
 
@@ -703,7 +704,11 @@ class ns3sim
 
         static void show_throughput()
         {
-            std::cout << std::string(150, '=') << std::endl;
+            double simTime = ns3::Simulator::Now().GetSeconds();
+            std::time_t realTime = std::time(nullptr);
+            std::cout << "==>[SIM " << simTime << "s] Wall time: " << std::ctime(&realTime);
+
+            // std::cout << std::string(150, '=') << std::endl;
             for (const auto &sinkApp : sinkAppMap)
             {
                 uint64_t totalRx = sinkApp.second -> GetTotalRx();
@@ -716,7 +721,7 @@ class ns3sim
                 Ptr<Node> node = it->second.second;
                 std::string nodeName = Names::FindName(node);
                 std::cout << "Node Name: " << nodeName 
-                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "5 GHz" : "2.4 GHz")
+                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz")
                           << ", Throughput: " << throughput 
                           << " Kbps" << std::endl;
                 // std::cout << "Node Name: " << nodeName 
@@ -734,6 +739,7 @@ class ns3sim
             //123
             coTraceHelper.PrintStatistics (std::cout);
             coTraceHelper.Reset();
+            std::cout << std::string(150, '=') << std::endl;
             Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
         }
 
@@ -748,11 +754,60 @@ class ns3sim
                 Ptr<NetDevice> dev = modelToDeviceMap.find(model)->second;
                 Ptr<Node> node = dev->GetNode();
                 std::cout << "    Node Name: " << Names::FindName(node) 
-                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "5 GHz" : "2.4 GHz") 
+                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz") 
                           << ", Energy Consumed: " << currentenergyConsumed << " J" << std::endl;
             }
             Simulator::Schedule(Seconds(60), &ns3sim::show_energy);
         }
+
+        static void show_ap_output_info()
+        {
+            double simTime = ns3::Simulator::Now().GetSeconds();
+            std::time_t realTime = std::time(nullptr);
+            std::cout << "==>[SIM " << simTime << "s] Wall time: " << std::ctime(&realTime);
+
+            std::map<std::pair<std::string, std::string>, double> throughputMap;
+
+            for (const auto &sinkApp : sinkAppMap)
+            {
+                uint64_t totalRx = sinkApp.second->GetTotalRx();
+                uint64_t currentRx = totalRx - previousRxBytes[sinkApp.first];
+                previousRxBytes[sinkApp.first] = totalRx;
+                double throughput = (currentRx * 8.0) / (60 * 1000); // Kbps
+
+                Ipv4Address ip = ipList[sinkApp.first];
+                auto it = ipToDeviceNodeMap.find(ip);
+                Ptr<NetDevice> dev = it->second.first;
+                Ptr<Node> node = it->second.second;
+                std::string nodeName = Names::FindName(node);
+                std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
+
+                throughputMap[{nodeName, band}] = throughput;
+            }
+
+            
+            for (auto model : deviceEnergyModels)
+            {
+                double totalEnergy = model->GetTotalEnergyConsumption();
+                double currentEnergy = totalEnergy - previouspower[model];
+                previouspower[model] = totalEnergy;
+
+                Ptr<NetDevice> dev = modelToDeviceMap[model];
+                Ptr<Node> node = dev->GetNode();
+                std::string nodeName = Names::FindName(node);
+                std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
+
+                double throughput = throughputMap[{nodeName, band}];
+                std::cout << "Node Name: " << nodeName
+                        << ", Band: " << band
+                        << ", Throughput: " << throughput << " Kbps"
+                        << ", Energy Consumed: " << currentEnergy << " J"
+                        << std::endl;
+            }
+
+            Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
+        }
+
 
         static void test()
         {
@@ -921,14 +976,42 @@ class ns3sim
                             source.SetAttribute("SendSize", UintegerValue(payloadSize));
                             ApplicationContainer sourceApps = source.Install(staNode_P);
                             if (i ==0) {
+                                // Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
+                                // Vector ap_position = ap_mobility->GetPosition();
+                                // Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
+                                // positionAlloc->Add(ap_position);
+                                // mobility.SetPositionAllocator(positionAlloc);
+                                // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+                                // mobility.Install(staNode_P);
+
                                 sourceApps.Start(Seconds(0.1));
                                 sourceApps.Stop(Seconds(60));
                             }
                             else if (i == 1) {
+                                // Simulator::Schedule(Seconds(61), [=]() {
+                                //     Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
+                                //     Vector ap_position = ap_mobility->GetPosition();
+                                //     Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
+                                //     positionAlloc->Add(ap_position);
+                                //     mobility.SetPositionAllocator(positionAlloc);
+                                //     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+                                //     mobility.Install(staNode_P);
+                                // });
+
                                 sourceApps.Start(Seconds(61));
                                 sourceApps.Stop(Seconds(120));
                             }
                             else {
+                                // Simulator::Schedule(Seconds(121), [=]() {
+                                //     Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
+                                //     Vector ap_position = ap_mobility->GetPosition();
+                                //     Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
+                                //     positionAlloc->Add(ap_position);
+                                //     mobility.SetPositionAllocator(positionAlloc);
+                                //     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+                                //     mobility.Install(staNode_P);
+                                // });
+
                                 sourceApps.Start(Seconds(121));
                                 sourceApps.Stop(Seconds(180));
                             }
