@@ -7,17 +7,15 @@ This document provides a comprehensive overview of the NS-3 WiFi Digital Twin sy
 ![image](./doc/images/wifi_dt_architecture.png)
 
 ## Message Sequence Chart
-Notes on the current MCS module progress:
-So far, only partial functionality has been implemented.
+
+In this MSC diagram, the sections highlighted with red boxes are not yet completed, while the rest have already been implemented..
 
 ### Inintial Setting
-![image](./doc/images/wifi_dt_initial_setting_msc.png)
+![image](./doc/images/wifi_dt_initial_setting_msc_red.png)
 
 ### Synchronization STA and Traffic
-![image](./doc/images/wifi_dt_synchronization_sta_and_traffic_msc.png)
+![image](./doc/images/wifi_dt_synchronization_sta_and_traffic_msc_red.png)
 
-### Synchronization AP
-![image](./doc/images/wifi_dt_synchronization_ap_msc.png)
 
 
 ## How to use it?
@@ -32,7 +30,7 @@ sudo ./install_all.sh
 For installation details, please refer to the [wifi dt installation guide](./doc/wifi_dt_installation_guide.md).
 
 ### User Guide
-TBD: Because the program do not finish yet, I will update user guide after all done.
+TBU: Because the program do not finish yet, I will update user guide after all done.
 
 ## Folder Structure
 ```plaintext
