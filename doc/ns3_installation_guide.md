@@ -1,8 +1,25 @@
 # ns-3 Installation Guide (for ns-3.45)
 This guide provides step-by-step instructions for installing and building ns-3.45 from source on Ubuntu 20.04 using GCC-10, CMake, Python3, and other required packages.
 
+- [ns-3 Installation Guide (for ns-3.45)](#ns-3-installation-guide-for-ns-345)
+  - [1. Prerequisites](#1-prerequisites)
+  - [2. Download Necessary Tools or Libraries](#2-download-necessary-tools-or-libraries)
+    - [2.1 Add Toolchain Repository](#21-add-toolchain-repository)
+    - [2.2 Install Development Tools](#22-install-development-tools)
+  - [3. Download and Build ns-3](#3-download-and-build-ns-3)
+    - [3.1 Download](#31-download)
+    - [3.2 Configure Build Options](#32-configure-build-options)
+    - [3.3 Build](#33-build)
+  - [4. Verify the Installation](#4-verify-the-installation)
+  - [5. Appendix: Quick Installation Script](#5-appendix-quick-installation-script)
+    - [Installation Script](#installation-script)
+      - [`ns3_install.sh`](#ns3_installsh)
+  - [Conclusion](#conclusion)
+
+
 ## 1. Prerequisites
 Make sure that your system has these prerequisites.
+
 ![image](../doc/images/requirement_ns3.png)
 
 From the command line, you can check the version of each of the above tools with version requirements as follows:
