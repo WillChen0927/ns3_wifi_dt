@@ -48,8 +48,16 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "5GHz",
-        "TXbytes": 10000000,
+        "TXbytes": 20000000,
         "dataDirection": "DL"
+      },
+      {
+        "STAName": "m11302234",
+        "ssid": "ntust-peap",
+        "connectedofAP": "RB_1F_AP04",
+        "radio band": "5GHz",
+        "TXbytes": 40000000,
+        "dataDirection": "UL"
       }
     ]
   }

@@ -820,6 +820,7 @@ class ns3sim
                 if (g_staConfig["numberOfSTA"] != 0){
                     for (const auto& sta : g_staConfig["STAConfig"]) 
                     {
+                        ApplicationContainer sink_sta;
                         if (Names::Find<Node>(sta["STAName"]) == nullptr)
                         {
                             std::cout << sta["STAName"] << " NOT exist, adding STA....."<< std::endl;
@@ -869,11 +870,16 @@ class ns3sim
                         mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
                         mobility.Install(staNode_P);
 
-                        PacketSinkHelper sinksta("ns3::TcpSocketFactory",InetSocketAddress(Ipv4Address::GetAny(), port_dl));
-                        ApplicationContainer sink_sta = sinksta.Install(staNode_P);
-                        sink_sta.Start(Seconds(0.0));
-                        sink_sta.Stop(Seconds(60.0));
-                        sinkAppMap_sta[sta["STAName"]] = DynamicCast<PacketSink>(sink_sta.Get(0));
+                        if (sinkAppMap_sta.find(sta["STAName"]) == sinkAppMap_sta.end()) {
+                            PacketSinkHelper sinksta("ns3::TcpSocketFactory",InetSocketAddress(Ipv4Address::GetAny(), port_dl));
+                            sink_sta = sinksta.Install(staNode_P);
+                            sink_sta.Start(Seconds(0.0));
+                            sink_sta.Stop(Seconds(60.0));
+                            sinkAppMap_sta[sta["STAName"]] = DynamicCast<PacketSink>(sink_sta.Get(0));
+                        } else {
+                            sink_sta.Start(Seconds(0.0));
+                            sink_sta.Stop(Seconds(60.0));
+                        }
                         
                         if (sta["radio band"] == "2.4GHz") {
                             Ptr<NetDevice> ap_dev = apNode_staconneced->GetDevice(0);
@@ -914,21 +920,21 @@ class ns3sim
                         }
                         
                         if (sta["dataDirection"] == "UL") {
-                            Address sinkAddress(InetSocketAddress(ap_netdevice_ipAddr, port_ul));
-                            BulkSendHelper source("ns3::TcpSocketFactory", sinkAddress);
-                            source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
-                            source.SetAttribute("SendSize", UintegerValue(payloadSize));
-                            ApplicationContainer sourceApps = source.Install(staNode_P);
-                            sourceApps.Start(Seconds(0.1));
-                            sourceApps.Stop(Seconds(60));
+                            Address ul_sinkAddress(InetSocketAddress(ap_netdevice_ipAddr, port_ul));
+                            BulkSendHelper ul_source("ns3::TcpSocketFactory", ul_sinkAddress);
+                            ul_source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
+                            ul_source.SetAttribute("SendSize", UintegerValue(payloadSize));
+                            ApplicationContainer ul_sourceApps = ul_source.Install(staNode_P);
+                            ul_sourceApps.Start(Seconds(0.1));
+                            ul_sourceApps.Stop(Seconds(60));
                         } else if (sta["dataDirection"] == "DL") {
-                            Address sinkAddress(InetSocketAddress(sta_netdevice_ipAddr, port_dl));
-                            BulkSendHelper source("ns3::TcpSocketFactory", sinkAddress);
-                            source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
-                            source.SetAttribute("SendSize", UintegerValue(payloadSize));
-                            ApplicationContainer sourceApps = source.Install(apNode_staconneced);
-                            sourceApps.Start(Seconds(0.1));
-                            sourceApps.Stop(Seconds(60));
+                            Address dl_sinkAddress(InetSocketAddress(sta_netdevice_ipAddr, port_dl));
+                            BulkSendHelper dl_source("ns3::TcpSocketFactory", dl_sinkAddress);
+                            dl_source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
+                            dl_source.SetAttribute("SendSize", UintegerValue(payloadSize));
+                            ApplicationContainer dl_sourceApps = dl_source.Install(apNode_staconneced);
+                            dl_sourceApps.Start(Seconds(0.1));
+                            dl_sourceApps.Stop(Seconds(60));
                         } else {
                             std::cerr << "Invalid data direction: " << sta["dataDirection"] << std::endl;
                             continue;
