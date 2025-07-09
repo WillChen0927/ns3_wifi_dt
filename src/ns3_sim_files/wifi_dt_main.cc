@@ -49,6 +49,8 @@ NS_LOG_COMPONENT_DEFINE("WiFi-DT-TEST");
 
 Time simTime {"2592000s"};
 uint32_t payloadSize = 1472;
+uint16_t port_ul = 777;
+uint16_t port_dl = 778;
 
 NodeContainer apNodes;
 NodeContainer staNodes;
@@ -65,26 +67,19 @@ MobilityHelper mobility;
 InternetStackHelper stack;
 Ssid ssid;
 WifiCoTraceHelper coTraceHelper;
+ApplicationContainer sinkApps_ap;
 
-std::map<uint32_t, Ptr<PacketSink>> sinkAppMap;  
-std::map<uint32_t, uint64_t> previousRxBytes;
+std::map<uint32_t, Ptr<PacketSink>> sinkAppMap_ap;
+std::map<std::string, Ptr<PacketSink>> sinkAppMap_sta;
+std::map<uint32_t, uint64_t> previousRxBytes_ap;
+std::map<std::string, uint64_t> previousRxBytes_sta;
 std::map<Ptr<WifiRadioEnergyModel>, double> previouspower;
 std::map<Ipv4Address, std::pair<Ptr<NetDevice>, Ptr<Node>>> ipToDeviceNodeMap;
 std::vector<Ipv4Address> ipList;
 std::vector<Ptr<WifiRadioEnergyModel>> deviceEnergyModels;
 std::map<Ptr<WifiRadioEnergyModel>, Ptr<NetDevice>> modelToDeviceMap;
 
-
-// struct StaRecord {
-//   std::string staName;
-//   std::string apName;
-//   std::string band;
-//   uint64_t data_bytes;
-//   std::string direction;
-// };
-
-// std::map<std::string, std::vector<StaRecord>> received_sta_configs;
-std::map<std::string, json> g_allStaConfigs;  // Key: time, Value: sta info
+json g_staConfig;
 std::mutex g_mutex;
 std::atomic<bool> g_triggerSend(false);
 
@@ -296,61 +291,53 @@ class RestfulServer
             Server svr;
 
             svr.Post("/upload", [](const Request& req, Response& res) {
-                try {
-                    auto j = json::parse(req.body);
+            try {
+                auto j = json::parse(req.body);
 
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    g_allStaConfigs.clear();
+                std::lock_guard<std::mutex> lock(g_mutex);
+                g_staConfig.clear();
 
-                    for (auto& [minuteKey, minuteData] : j.items()) {
-                        if (!minuteData.contains("numberOfSTA") || !minuteData.contains("STAConfig")) {
-                            std::cerr << "[REST] Invalid format in: " << minuteKey << std::endl;
-                            continue;
-                        }
-
-                        // std::string dateTime = minuteData["DateTime"];
-                        // size_t numSta = minuteData["numberOfSTA"];
-                        // auto staConfigs = minuteData["STAConfig"];
-                        // std::cout << "[REST] Accepted " << minuteKey
-                        //         << " with " << numSta << " STAs.\n";
-                        // if (staConfigs.size() != numSta) {
-                        //     std::cerr << "[REST] Mismatch STA count in: " << minuteKey << std::endl;
-                        //     continue;
-                        // }
-
-                        // store into map
-                        g_allStaConfigs[minuteKey] = minuteData;
-                    }
-
-                    std::cout << std::string(150, '-') << std::endl;
-                    std::cout << "[REST] Received REST upload.\n";
-                    
-                    for (const auto& [minuteKey, config] : g_allStaConfigs) {
-                        std::cout << "== " << minuteKey << " ==\n";
-                        std::cout << "  DateTime: " << config["DateTime"] << "\n";
-                        std::cout << "  STA Count: " << config["numberOfSTA"] << "\n";
-
-                        int i = 0;
-                        for (const auto& sta : config["STAConfig"]) {
-                            std::cout << "    [" << i++ << "] "
-                                    << sta["STAName"] << ", "
-                                    << sta["ssid"] << ", "
-                                    << sta["connectedofAP"] << ", "
-                                    << sta["radio band"] << ", "
-                                    << sta["TXbytes"] << " bytes, "
-                                    << sta["dataDirection"] << "\n";
-                        }
-                    }
-                    
-                    std::cout << std::string(150, '-') << std::endl;
-                    g_triggerSend = true;
-                    res.set_content("{\"status\": \"multi-minute ok\"}", "application/json");
-
-                } catch (const std::exception& e) {
-                    std::cerr << "JSON parsing error: " << e.what() << std::endl;
-                    res.set_content("{\"status\": \"invalid json\"}", "application/json");
+                if (!j.contains("Minute")) {
+                    std::cerr << "[REST] No 'Minute' field found\n";
+                    res.set_content("{\"status\": \"missing Minute\"}", "application/json");
+                    return;
                 }
-            });
+
+                const auto& minuteData = j["Minute"];
+
+                if (!minuteData.contains("numberOfSTA") || !minuteData.contains("STAConfig")) {
+                    std::cerr << "[REST] Invalid 'Minute' format\n";
+                    res.set_content("{\"status\": \"invalid format\"}", "application/json");
+                    return;
+                }
+
+                g_staConfig = minuteData;
+
+                std::cout << std::string(150, '-') << std::endl;
+                std::cout << "[REST] Received REST upload.\n";
+                std::cout << "  DateTime: " << g_staConfig["DateTime"] << "\n";
+                std::cout << "  STA Count: " << g_staConfig["numberOfSTA"] << "\n";
+
+                int i = 0;
+                for (const auto& sta : g_staConfig["STAConfig"]) {
+                    std::cout << "    [" << i++ << "] "
+                            << sta["STAName"] << ", "
+                            << sta["ssid"] << ", "
+                            << sta["connectedofAP"] << ", "
+                            << sta["radio band"] << ", "
+                            << sta["TXbytes"] << " bytes, "
+                            << sta["dataDirection"] << "\n";
+                }
+                std::cout << std::string(150, '-') << std::endl;
+
+                g_triggerSend = true;
+                res.set_content("{\"status\": \"single-minute ok\"}", "application/json");
+
+            } catch (const std::exception& e) {
+                std::cerr << "JSON parsing error: " << e.what() << std::endl;
+                res.set_content("{\"status\": \"invalid json\"}", "application/json");
+            }
+        });
 
             std::cout << "RESTful server listening on port 5000" << std::endl;
             svr.listen("0.0.0.0", 5000);
@@ -568,8 +555,6 @@ class ns3sim
                 }
             }
 
-            ApplicationContainer sinkApps;
-            uint16_t port = 777;
             for (uint32_t i = 0; i < apNodes.GetN(); ++i)
             {
                 Ptr<Node> node = apNodes.Get(i);
@@ -591,18 +576,18 @@ class ns3sim
                     ipToDeviceNodeMap[ipAddr] = std::make_pair(dev, node);
                     ipList.push_back(ipAddr);
 
-                    PacketSinkHelper sink("ns3::TcpSocketFactory",InetSocketAddress(ipAddr, port));
-                    ApplicationContainer app = sink.Install(node);
-                    app.Start(Seconds(0.1));
-                    app.Stop(simTime);
+                    PacketSinkHelper sink("ns3::TcpSocketFactory",InetSocketAddress(ipAddr, port_ul));
+                    ApplicationContainer sink_ap = sink.Install(node);
+                    sink_ap.Start(Seconds(0.1));
+                    sink_ap.Stop(simTime);
 
-                    sinkApps.Add(app);
+                    sinkApps_ap.Add(sink_ap);
                 }
             }
 
-            for(uint32_t i = 0; i < sinkApps.GetN(); ++i)
+            for(uint32_t i = 0; i < sinkApps_ap.GetN(); ++i)
             {
-                sinkAppMap[i] = DynamicCast<PacketSink>(sinkApps.Get(i));
+                sinkAppMap_ap[i] = DynamicCast<PacketSink>(sinkApps_ap.Get(i));
             }
 
             coTraceHelper.Enable (apDevices_all);
@@ -610,11 +595,12 @@ class ns3sim
             coTraceHelper.Stop(simTime);
 
             Simulator::Schedule(Seconds(1), &ns3sim::show_deployed_ap_info);
-            // Simulator::Schedule(Seconds(60), &ns3sim::show_throughput);
-            // Simulator::Schedule(Seconds(60), &ns3sim::show_energy);
             Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
+            Simulator::Schedule(Seconds(60), &ns3sim::show_sta_output_info);
             Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
+
             //Simulator::Schedule(Seconds(5), &ns3sim::test);
+            //Simulator::Schedule(Seconds(60), &ns3sim::test_change_ap);
             Simulator::Schedule(Seconds(60), &ns3sim::sta_config);
 
 
@@ -702,38 +688,6 @@ class ns3sim
             }
         }
 
-        static void show_throughput()
-        {
-            double simTime = ns3::Simulator::Now().GetSeconds();
-            std::time_t realTime = std::time(nullptr);
-            std::cout << "==>[SIM " << simTime << "s] Wall time: " << std::ctime(&realTime);
-
-            // std::cout << std::string(150, '=') << std::endl;
-            for (const auto &sinkApp : sinkAppMap)
-            {
-                uint64_t totalRx = sinkApp.second -> GetTotalRx();
-                uint64_t currentRx = totalRx - previousRxBytes[sinkApp.first];
-                previousRxBytes[sinkApp.first] = totalRx;
-                double throughput = (currentRx * 8.0) / (60 * 1000); // Convert to Kbps
-                Ipv4Address ip = ipList[sinkApp.first];
-                auto it = ipToDeviceNodeMap.find(ip);
-                Ptr<NetDevice> dev = it->second.first;
-                Ptr<Node> node = it->second.second;
-                std::string nodeName = Names::FindName(node);
-                std::cout << "Node Name: " << nodeName 
-                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz")
-                          << ", Throughput: " << throughput 
-                          << " Kbps" << std::endl;
-                // std::cout << "Node Name: " << nodeName 
-                //           << ", Received Bytes: " << totalRx 
-                //           << ", Current Received Bytes: " << currentRx 
-                //           << ", Previous Received Bytes: " << previousRxBytes[sinkApp.first] 
-                //           << ", Throughput: " << throughput 
-                //           << " Kbps" << std::endl;
-            }
-            Simulator::Schedule(Seconds(60), &ns3sim::show_throughput);
-        }
-
         static void show_CO()
         {
             //123
@@ -741,23 +695,6 @@ class ns3sim
             coTraceHelper.Reset();
             std::cout << std::string(150, '=') << std::endl;
             Simulator::Schedule(Seconds(60), &ns3sim::show_CO);
-        }
-
-        static void show_energy()
-        {
-            std::cout << "Energy consumption of devices:" << std::endl;
-            for (auto model : deviceEnergyModels)
-            {
-                double TotalenergyConsumed = model->GetTotalEnergyConsumption();
-                double currentenergyConsumed = TotalenergyConsumed - previouspower[model];
-                previouspower[model] = TotalenergyConsumed;
-                Ptr<NetDevice> dev = modelToDeviceMap.find(model)->second;
-                Ptr<Node> node = dev->GetNode();
-                std::cout << "    Node Name: " << Names::FindName(node) 
-                          << ", Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz") 
-                          << ", Energy Consumed: " << currentenergyConsumed << " J" << std::endl;
-            }
-            Simulator::Schedule(Seconds(60), &ns3sim::show_energy);
         }
 
         static void show_ap_output_info()
@@ -768,11 +705,11 @@ class ns3sim
 
             std::map<std::pair<std::string, std::string>, double> throughputMap;
 
-            for (const auto &sinkApp : sinkAppMap)
+            for (const auto &sinkApp : sinkAppMap_ap)
             {
                 uint64_t totalRx = sinkApp.second->GetTotalRx();
-                uint64_t currentRx = totalRx - previousRxBytes[sinkApp.first];
-                previousRxBytes[sinkApp.first] = totalRx;
+                uint64_t currentRx = totalRx - previousRxBytes_ap[sinkApp.first];
+                previousRxBytes_ap[sinkApp.first] = totalRx;
                 double throughput = (currentRx * 8.0) / (60 * 1000); // Kbps
 
                 Ipv4Address ip = ipList[sinkApp.first];
@@ -800,7 +737,7 @@ class ns3sim
                 double throughput = throughputMap[{nodeName, band}];
                 std::cout << "Node Name: " << nodeName
                         << ", Band: " << band
-                        << ", Throughput: " << throughput << " Kbps"
+                        << ", RX Throughput: " << throughput << " Kbps"
                         << ", Energy Consumed: " << currentEnergy << " J"
                         << std::endl;
             }
@@ -808,6 +745,22 @@ class ns3sim
             Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
         }
 
+        static void show_sta_output_info()
+        {
+            std::cout << "show sta output info: " << std::endl;
+            for (const auto &sinkApp : sinkAppMap_sta)
+            {
+                uint64_t totalRx = sinkApp.second->GetTotalRx();
+                uint64_t currentRx = totalRx - previousRxBytes_sta[sinkApp.first];
+                previousRxBytes_sta[sinkApp.first] = totalRx;
+                double throughput = (currentRx * 8.0) / (60 * 1000); // Kbps
+
+                std::cout << "STA Node: " << sinkApp.first 
+                          << ", RX Throughput: " << throughput << " Kbps" 
+                          << std::endl;
+            }
+            Simulator::Schedule(Seconds(60), &ns3sim::show_sta_output_info);
+        }
 
         static void test()
         {
@@ -844,8 +797,7 @@ class ns3sim
             Ipv4InterfaceContainer staInterface5 = address5.Assign(staDevice5);
 
             Ipv4Address apAddress("10.1.4.1");
-            uint16_t port = 777;
-            Address sinkAddress(InetSocketAddress(apAddress, port));
+            Address sinkAddress(InetSocketAddress(apAddress, port_ul));
             BulkSendHelper source("ns3::TcpSocketFactory", sinkAddress);
             source.SetAttribute("MaxBytes", UintegerValue(10000000)); // 10 MB
             source.SetAttribute("SendSize", UintegerValue(payloadSize));
@@ -854,167 +806,132 @@ class ns3sim
             sourceApps.Stop(Seconds(60));
         }
 
+        static void test_change_ap_config()
+        {
+            std::cout << "Test change AP connection." << std::endl;
+            
+        }
+
         static void sta_config()
         {
             if (g_triggerSend) {
                 std::lock_guard<std::mutex> lock(g_mutex);
-
-                std::vector<json> minutes = {
-                    g_allStaConfigs.at("Minute_01"),
-                    g_allStaConfigs.at("Minute_02"),
-                    g_allStaConfigs.at("Minute_03")
-                };
                 
-                for (size_t i = 0; i < minutes.size(); ++i)
-                {
-                    const json& currentMinute = minutes[i];
-
-                    if (currentMinute["numberOfSTA"] != 0){
-                        for (const auto& sta : currentMinute["STAConfig"]) 
+                if (g_staConfig["numberOfSTA"] != 0){
+                    for (const auto& sta : g_staConfig["STAConfig"]) 
+                    {
+                        if (Names::Find<Node>(sta["STAName"]) == nullptr)
                         {
-                            if (Names::Find<Node>(sta["STAName"]) == nullptr)
-                            {
-                                std::cout << sta["STAName"] << " NOT exist, adding STA....."<< std::endl;
-                                Ptr<Node> staNode = CreateObject<Node>();
-                                staNodes.Add(staNode);
-                                Names::Add (sta["STAName"], staNode);
+                            std::cout << sta["STAName"] << " NOT exist, adding STA....."<< std::endl;
+                            Ptr<Node> staNode = CreateObject<Node>();
+                            staNodes.Add(staNode);
+                            Names::Add (sta["STAName"], staNode);
 
-                                WifiHelper wifi;
-                                wifi.SetStandard(WIFI_STANDARD_80211ax);
-                                wifi.SetRemoteStationManager("ns3::IdealWifiManager");
+                            WifiHelper wifi;
+                            wifi.SetStandard(WIFI_STANDARD_80211ax);
+                            wifi.SetRemoteStationManager("ns3::IdealWifiManager");
 
-                                WifiMacHelper mac;
-                                std::string ssidStr = sta["ssid"];
-                                mac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssidStr), "ActiveProbing", BooleanValue(true));
+                            WifiMacHelper mac;
+                            std::string ssidStr = sta["ssid"];
+                            mac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssidStr), "ActiveProbing", BooleanValue(true));
 
-                                stack.Install(staNode);
+                            stack.Install(staNode);
 
-                                yansPhy24.Set("ChannelSettings", StringValue("{1, 20, BAND_2_4GHZ, 0}"));
-                                NetDeviceContainer staDevice24;
-                                staDevice24 = wifi.Install(yansPhy24, mac, staNode);
-                                Ipv4InterfaceContainer staInterface24 = address24.Assign(staDevice24);
+                            yansPhy24.Set("ChannelSettings", StringValue("{1, 20, BAND_2_4GHZ, 0}"));
+                            NetDeviceContainer staDevice24;
+                            staDevice24 = wifi.Install(yansPhy24, mac, staNode);
+                            Ipv4InterfaceContainer staInterface24 = address24.Assign(staDevice24);
 
-                                yansPhy5.Set("ChannelSettings", StringValue("{42, 80, BAND_5GHZ, 0}"));
-                                NetDeviceContainer staDevice5;
-                                staDevice5 = wifi.Install(yansPhy5, mac, staNode);
-                                Ipv4InterfaceContainer staInterface5 = address5.Assign(staDevice5);
-                            }else
-                            {
-                                std::cout << sta["STAName"] << " exist, skip adding STA." << std::endl;
+                            yansPhy5.Set("ChannelSettings", StringValue("{42, 80, BAND_5GHZ, 0}"));
+                            NetDeviceContainer staDevice5;
+                            staDevice5 = wifi.Install(yansPhy5, mac, staNode);
+                            Ipv4InterfaceContainer staInterface5 = address5.Assign(staDevice5);
+                        }else
+                        {
+                            std::cout << sta["STAName"] << " exist, skip adding STA." << std::endl;
+                        }
+
+                        
+                        Ptr<Node> staNode_P = Names::Find<Node>(sta["STAName"]);
+                        Ptr<Node> apNode_staconneced = Names::Find<Node>(sta["connectedofAP"]);
+                        
+                        Ptr<Ipv4> ap_ipv4 = apNode_staconneced->GetObject<Ipv4>();
+                        Ipv4Address ap_netdevice_ipAddr;
+
+                        Ptr<Ipv4> sta_ipv4 = staNode_P->GetObject<Ipv4>();
+                        Ipv4Address sta_netdevice_ipAddr;
+                        
+                        Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
+                        Vector ap_position = ap_mobility->GetPosition();
+                        Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
+                        positionAlloc->Add(ap_position);
+                        mobility.SetPositionAllocator(positionAlloc);
+                        mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+                        mobility.Install(staNode_P);
+
+                        PacketSinkHelper sinksta("ns3::TcpSocketFactory",InetSocketAddress(Ipv4Address::GetAny(), port_dl));
+                        ApplicationContainer sink_sta = sinksta.Install(staNode_P);
+                        sink_sta.Start(Seconds(0.0));
+                        sink_sta.Stop(Seconds(60.0));
+                        sinkAppMap_sta[sta["STAName"]] = DynamicCast<PacketSink>(sink_sta.Get(0));
+                        
+                        if (sta["radio band"] == "2.4GHz") {
+                            Ptr<NetDevice> ap_dev = apNode_staconneced->GetDevice(0);
+                            int32_t ap_interfaceIndex = ap_ipv4->GetInterfaceForDevice(ap_dev);
+                            ap_netdevice_ipAddr = ap_ipv4->GetAddress(ap_interfaceIndex, 0).GetLocal();
+                            Ptr<WifiNetDevice> ap_wifiDev = DynamicCast<WifiNetDevice>(ap_dev);
+                            Ptr<WifiPhy> ap_wifiphy = ap_wifiDev->GetPhy();
+                            uint8_t ap_ChannelNumber = ap_wifiphy->GetChannelNumber();
+                            Ptr<NetDevice> sta_dev = staNode_P->GetDevice(1);
+                            Ptr<WifiNetDevice> staDevice24 = DynamicCast<WifiNetDevice>(sta_dev);
+                            Ptr<WifiPhy> sta_wifiphy24 = staDevice24->GetPhy();
+                            sta_wifiphy24->SetOperatingChannel(WifiPhy::ChannelTuple{ap_ChannelNumber, 20, WIFI_PHY_BAND_2_4GHZ, 0});
+                            int32_t sta_interfaceIndex = sta_ipv4->GetInterfaceForDevice(sta_dev);
+                            sta_netdevice_ipAddr = sta_ipv4->GetAddress(sta_interfaceIndex, 0).GetLocal();
+                        }else{
+                            uint16_t ap_device_index;
+                            if (apNode_staconneced->GetNDevices() == 3){
+                                ap_device_index = 1;
                             }
-
-                            
-                            Ptr<Node> staNode_P = Names::Find<Node>(sta["STAName"]);
-                            Ptr<Node> apNode_staconneced = Names::Find<Node>(sta["connectedofAP"]);
-                            
-                            Ptr<Ipv4> ap_ipv4 = apNode_staconneced->GetObject<Ipv4>();
-                            Ipv4Address ap_netdevice_ipAddr;
-                            
-                            Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
-                            Vector ap_position = ap_mobility->GetPosition();
-                            Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-                            positionAlloc->Add(ap_position);
-                            mobility.SetPositionAllocator(positionAlloc);
-                            mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-                            mobility.Install(staNode_P);
-                            
-                            if (sta["radio band"] == "2.4GHz") {
-                                //std::cout << "STA is 2.4G" << std::endl;
-                                Ptr<NetDevice> ap_dev = apNode_staconneced->GetDevice(0);
-                                int32_t ap_interfaceIndex = ap_ipv4->GetInterfaceForDevice(ap_dev);
-                                ap_netdevice_ipAddr = ap_ipv4->GetAddress(ap_interfaceIndex, 0).GetLocal();
-                                Ptr<WifiNetDevice> ap_wifiDev = DynamicCast<WifiNetDevice>(ap_dev);
-                                Ptr<WifiPhy> ap_wifiphy = ap_wifiDev->GetPhy();
-                                uint8_t ap_ChannelNumber = ap_wifiphy->GetChannelNumber();
-
-                                //std::cout << "Listing WifiNetDevices for STA: " << sta["STAName"] << std::endl;
-                                // for (uint32_t i = 0; i < apNode_staconneced->GetNDevices(); ++i)
-                                // {
-                                //     Ptr<NetDevice> dev = apNode_staconneced->GetDevice(i);
-                                //     if (DynamicCast<LoopbackNetDevice>(dev)) 
-                                //     {
-                                //         continue;
-                                //     }
-
-                                //     std::cout << i << ":Band: " << ((dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "5 GHz" : "2.4 GHz") << std::endl; 
-                                // }
-
-                                Ptr<NetDevice> sta_dev = staNode_P->GetDevice(1);
-                                Ptr<WifiNetDevice> staDevice24 = DynamicCast<WifiNetDevice>(sta_dev);
-                                Ptr<WifiPhy> sta_wifiphy24 = staDevice24->GetPhy();
-                                sta_wifiphy24->SetOperatingChannel(WifiPhy::ChannelTuple{ap_ChannelNumber, 20, WIFI_PHY_BAND_2_4GHZ, 0});
-                            }else{
-                                //std::cout << "STA is 5G" << std::endl;
-                                uint16_t ap_device_index;
-                                if (apNode_staconneced->GetNDevices() == 3){
-                                    ap_device_index = 1;
-                                }
-                                else{
-                                    ap_device_index = 0;
-                                }
-                                
-                                Ptr<NetDevice> ap_dev = apNode_staconneced->GetDevice(ap_device_index);
-                                int32_t ap_interfaceIndex = ap_ipv4->GetInterfaceForDevice(ap_dev);
-                                ap_netdevice_ipAddr = ap_ipv4->GetAddress(ap_interfaceIndex, 0).GetLocal();
-                                Ptr<WifiNetDevice> ap_wifiDev = DynamicCast<WifiNetDevice>(ap_dev);
-                                Ptr<WifiPhy> ap_wifiphy = ap_wifiDev->GetPhy();
-                                uint8_t ap_ChannelNumber = ap_wifiphy->GetChannelNumber();
-                                uint8_t ap_primary20Index = ap_wifiphy->GetPrimary20Index();
-                                //uint8_t ap_ChannelNumber_E = ap_ChannelNumber - 6 + ap_primary20Index*4;
-
-                                Ptr<NetDevice> sta_dev = staNode_P->GetDevice(2);
-                                Ptr<WifiNetDevice> staDevice5 = DynamicCast<WifiNetDevice>(sta_dev);
-                                Ptr<WifiPhy> sta_wifiphy5 = staDevice5->GetPhy();
-                                sta_wifiphy5->SetOperatingChannel(WifiPhy::ChannelTuple{ap_ChannelNumber, 80, WIFI_PHY_BAND_5GHZ, ap_primary20Index});
+                            else{
+                                ap_device_index = 0;
                             }
                             
-                            //Ipv4Address apAddress("10.1.4.1");
-                            uint16_t port = 777;
-                            Address sinkAddress(InetSocketAddress(ap_netdevice_ipAddr, port));
+                            Ptr<NetDevice> ap_dev = apNode_staconneced->GetDevice(ap_device_index);
+                            int32_t ap_interfaceIndex = ap_ipv4->GetInterfaceForDevice(ap_dev);
+                            ap_netdevice_ipAddr = ap_ipv4->GetAddress(ap_interfaceIndex, 0).GetLocal();
+                            Ptr<WifiNetDevice> ap_wifiDev = DynamicCast<WifiNetDevice>(ap_dev);
+                            Ptr<WifiPhy> ap_wifiphy = ap_wifiDev->GetPhy();
+                            uint8_t ap_ChannelNumber = ap_wifiphy->GetChannelNumber();
+                            uint8_t ap_primary20Index = ap_wifiphy->GetPrimary20Index();
+                            //uint8_t ap_ChannelNumber_E = ap_ChannelNumber - 6 + ap_primary20Index*4;
+                            Ptr<NetDevice> sta_dev = staNode_P->GetDevice(2);
+                            Ptr<WifiNetDevice> staDevice5 = DynamicCast<WifiNetDevice>(sta_dev);
+                            Ptr<WifiPhy> sta_wifiphy5 = staDevice5->GetPhy();
+                            sta_wifiphy5->SetOperatingChannel(WifiPhy::ChannelTuple{ap_ChannelNumber, 80, WIFI_PHY_BAND_5GHZ, ap_primary20Index});
+                            int32_t sta_interfaceIndex = sta_ipv4->GetInterfaceForDevice(sta_dev);
+                            sta_netdevice_ipAddr = sta_ipv4->GetAddress(sta_interfaceIndex, 0).GetLocal();
+                        }
+                        
+                        if (sta["dataDirection"] == "UL") {
+                            Address sinkAddress(InetSocketAddress(ap_netdevice_ipAddr, port_ul));
                             BulkSendHelper source("ns3::TcpSocketFactory", sinkAddress);
                             source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
                             source.SetAttribute("SendSize", UintegerValue(payloadSize));
                             ApplicationContainer sourceApps = source.Install(staNode_P);
-                            if (i ==0) {
-                                // Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
-                                // Vector ap_position = ap_mobility->GetPosition();
-                                // Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-                                // positionAlloc->Add(ap_position);
-                                // mobility.SetPositionAllocator(positionAlloc);
-                                // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-                                // mobility.Install(staNode_P);
-
-                                sourceApps.Start(Seconds(0.1));
-                                sourceApps.Stop(Seconds(60));
-                            }
-                            else if (i == 1) {
-                                // Simulator::Schedule(Seconds(61), [=]() {
-                                //     Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
-                                //     Vector ap_position = ap_mobility->GetPosition();
-                                //     Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-                                //     positionAlloc->Add(ap_position);
-                                //     mobility.SetPositionAllocator(positionAlloc);
-                                //     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-                                //     mobility.Install(staNode_P);
-                                // });
-
-                                sourceApps.Start(Seconds(61));
-                                sourceApps.Stop(Seconds(120));
-                            }
-                            else {
-                                // Simulator::Schedule(Seconds(121), [=]() {
-                                //     Ptr<MobilityModel> ap_mobility = apNode_staconneced->GetObject<MobilityModel>();
-                                //     Vector ap_position = ap_mobility->GetPosition();
-                                //     Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-                                //     positionAlloc->Add(ap_position);
-                                //     mobility.SetPositionAllocator(positionAlloc);
-                                //     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-                                //     mobility.Install(staNode_P);
-                                // });
-
-                                sourceApps.Start(Seconds(121));
-                                sourceApps.Stop(Seconds(180));
-                            }
+                            sourceApps.Start(Seconds(0.1));
+                            sourceApps.Stop(Seconds(60));
+                        } else if (sta["dataDirection"] == "DL") {
+                            Address sinkAddress(InetSocketAddress(sta_netdevice_ipAddr, port_dl));
+                            BulkSendHelper source("ns3::TcpSocketFactory", sinkAddress);
+                            source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
+                            source.SetAttribute("SendSize", UintegerValue(payloadSize));
+                            ApplicationContainer sourceApps = source.Install(apNode_staconneced);
+                            sourceApps.Start(Seconds(0.1));
+                            sourceApps.Stop(Seconds(60));
+                        } else {
+                            std::cerr << "Invalid data direction: " << sta["dataDirection"] << std::endl;
+                            continue;
                         }
                     }
                 }
@@ -1040,8 +957,10 @@ class ns3sim
                 //     }
                 // }
                 g_triggerSend = false;
+                std::cout << "g_triggerSend: " << g_triggerSend << std::endl;
+                std::cout << std::string(150, '=') << std::endl;
             }
-            Simulator::Schedule(Seconds(180), &ns3sim::sta_config);
+            Simulator::Schedule(Seconds(60), &ns3sim::sta_config);
         }
 };
 
