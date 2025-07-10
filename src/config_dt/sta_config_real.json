@@ -1,24 +1,6 @@
 {
   "Minute": {
     "DateTime": "2025-04-22T15:39:56",
-    "numberOfSTA": 2,
-    "STAConfig": [
-      {
-        "STAName": "m11302235",
-        "ssid": "ntust-peap",
-        "connectedofAP": "RB_1F_AP01",
-        "radio band": "5GHz",
-        "TXbytes": 10000000,
-        "dataDirection": "DL"
-      },
-      {
-        "STAName": "m11302236",
-        "ssid": "ntust-peap",
-        "connectedofAP": "RB_1F_AP01",
-        "radio band": "5GHz",
-        "TXbytes": 10000000,
-        "dataDirection": "DL"
-      }
-    ]
+    "STAConfig": []
   }
 }

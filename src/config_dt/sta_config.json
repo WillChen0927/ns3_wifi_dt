@@ -1,14 +1,13 @@
 {
   "Minute": {
     "DateTime": "2025-04-22T15:39:56",
-    "numberOfSTA": 6,
     "STAConfig": [
       {
         "STAName": "m11302229",
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP01",
         "radio band": "5GHz",
-        "TXbytes": 10000000,
+        "bytes": 10000000,
         "dataDirection": "UL"
       },
       {
@@ -16,7 +15,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP01",
         "radio band": "5GHz",
-        "TXbytes": 10000000,
+        "bytes": 10000000,
         "dataDirection": "UL"
       },
       {
@@ -24,7 +23,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP01",
         "radio band": "5GHz",
-        "TXbytes": 10000000,
+        "bytes": 10000000,
         "dataDirection": "UL"
       },
       {
@@ -32,7 +31,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "2.4GHz",
-        "TXbytes": 10000000,
+        "bytes": 10000000,
         "dataDirection": "UL"
       },
       {
@@ -40,7 +39,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "2.4GHz",
-        "TXbytes": 10000000,
+        "bytes": 10000000,
         "dataDirection": "UL"
       },
       {
@@ -48,7 +47,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "5GHz",
-        "TXbytes": 20000000,
+        "bytes": 20000000,
         "dataDirection": "DL"
       },
       {
@@ -56,7 +55,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "5GHz",
-        "TXbytes": 40000000,
+        "bytes": 40000000,
         "dataDirection": "UL"
       }
     ]
