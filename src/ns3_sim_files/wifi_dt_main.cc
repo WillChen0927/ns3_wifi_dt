@@ -72,6 +72,10 @@ ApplicationContainer sinkApps_ap;
 std::map<uint32_t, Ptr<PacketSink>> sinkAppMap_ap;
 std::map<std::string, Ptr<PacketSink>> sinkAppMap_sta;
 std::map<uint32_t, uint64_t> previousRxBytes_ap;
+
+std::map<uint32_t, uint64_t> g_txBytesPerDevice;
+std::map<uint32_t, uint64_t> g_prevTxBytesPerDevice;
+
 std::map<std::string, uint64_t> previousRxBytes_sta;
 std::map<Ptr<WifiRadioEnergyModel>, double> previouspower;
 std::map<Ipv4Address, std::pair<Ptr<NetDevice>, Ptr<Node>>> ipToDeviceNodeMap;
@@ -116,7 +120,7 @@ class AccessPointManager
         }
     
         void PrintAll() const {
-            std::cout << "Reicived APs configurations:" << std::endl;
+            std::cout << "[NETCONF] Reicived APs configurations:" << std::endl;
             for (const auto& ap : ap_list) {
                 std::cout << "AP ID: " << ap.ap_id << ", Name: " << ap.ap_name
                           << ", SSID: " << ap.ssid << ", Standard: " << ap.ap_standard 
@@ -305,7 +309,7 @@ class RestfulServer
 
                 const auto& minuteData = j["Minute"];
 
-                if (!minuteData.contains("numberOfSTA") || !minuteData.contains("STAConfig")) {
+                if (!minuteData.contains("STAConfig")) {
                     std::cerr << "[REST] Invalid 'Minute' format\n";
                     res.set_content("{\"status\": \"invalid format\"}", "application/json");
                     return;
@@ -316,7 +320,6 @@ class RestfulServer
                 std::cout << std::string(150, '-') << std::endl;
                 std::cout << "[REST] Received REST upload.\n";
                 std::cout << "  DateTime: " << g_staConfig["DateTime"] << "\n";
-                std::cout << "  STA Count: " << g_staConfig["numberOfSTA"] << "\n";
 
                 int i = 0;
                 for (const auto& sta : g_staConfig["STAConfig"]) {
@@ -325,7 +328,7 @@ class RestfulServer
                             << sta["ssid"] << ", "
                             << sta["connectedofAP"] << ", "
                             << sta["radio band"] << ", "
-                            << sta["TXbytes"] << " bytes, "
+                            << sta["bytes"] << " bytes, "
                             << sta["dataDirection"] << "\n";
                 }
                 std::cout << std::string(150, '-') << std::endl;
@@ -590,6 +593,25 @@ class ns3sim
                 sinkAppMap_ap[i] = DynamicCast<PacketSink>(sinkApps_ap.Get(i));
             }
 
+            uint32_t devCounter = 0;
+            for (uint32_t i = 0; i < apNodes.GetN(); ++i)
+            {
+                Ptr<Node> node = apNodes.Get(i);
+                for (uint32_t j = 0; j < node->GetNDevices(); ++j)
+                {
+                    Ptr<NetDevice> dev = node->GetDevice(j);
+                    if (!DynamicCast<WifiNetDevice>(dev)) continue;
+
+                    std::ostringstream path;
+                    path << "/NodeList/" << node->GetId()
+                        << "/DeviceList/" << j
+                        << "/$ns3::WifiNetDevice/Mac/MacTx";
+
+                    Config::ConnectWithoutContext(path.str(), MakeBoundCallback(&MacTxTrace, devCounter));
+                    devCounter++;
+                }
+            }
+
             coTraceHelper.Enable (apDevices_all);
             coTraceHelper.Start(Seconds(0.1));
             coTraceHelper.Stop(simTime);
@@ -610,6 +632,12 @@ class ns3sim
         }
 
     private:
+
+        static void MacTxTrace(uint32_t devId, Ptr<const Packet> packet)
+        {
+            g_txBytesPerDevice[devId] += packet->GetSize();
+        }
+
         static std::string Get5GChannelConfig(int inputChannel)
         {
             std::map<int, std::vector<int>> channelGroups = {
@@ -647,7 +675,7 @@ class ns3sim
             WifiStandard Standard = WIFI_STANDARD_80211a;
             Ssid dev_ssid;
 
-            std::cout << "Deployed APs infomations:" << std::endl;
+            std::cout << "[NS-3] Deployed APs infomations:" << std::endl;
             for (uint32_t i = 0; i < apNodes.GetN(); ++i)
             {
                 Ptr<Node> node = apNodes.Get(i);
@@ -690,7 +718,6 @@ class ns3sim
 
         static void show_CO()
         {
-            //123
             coTraceHelper.PrintStatistics (std::cout);
             coTraceHelper.Reset();
             std::cout << std::string(150, '=') << std::endl;
@@ -703,14 +730,15 @@ class ns3sim
             std::time_t realTime = std::time(nullptr);
             std::cout << "==>[SIM " << simTime << "s] Wall time: " << std::ctime(&realTime);
 
-            std::map<std::pair<std::string, std::string>, double> throughputMap;
+            std::map<std::pair<std::string, std::string>, double> rx_throughputMap;
+            std::map<std::pair<std::string, std::string>, double> tx_throughputMap;
 
             for (const auto &sinkApp : sinkAppMap_ap)
             {
                 uint64_t totalRx = sinkApp.second->GetTotalRx();
                 uint64_t currentRx = totalRx - previousRxBytes_ap[sinkApp.first];
                 previousRxBytes_ap[sinkApp.first] = totalRx;
-                double throughput = (currentRx * 8.0) / (60 * 1000); // Kbps
+                double rx_throughput = (currentRx * 8.0) / (60 * 1000); // Kbps
 
                 Ipv4Address ip = ipList[sinkApp.first];
                 auto it = ipToDeviceNodeMap.find(ip);
@@ -719,9 +747,24 @@ class ns3sim
                 std::string nodeName = Names::FindName(node);
                 std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
 
-                throughputMap[{nodeName, band}] = throughput;
+                rx_throughputMap[{nodeName, band}] = rx_throughput;
             }
 
+            for (const auto& [devId, totalBytes] : g_txBytesPerDevice)
+            {
+                uint64_t deltaBytes = totalBytes - g_prevTxBytesPerDevice[devId];
+                g_prevTxBytesPerDevice[devId] = totalBytes;
+                double tx_throughput = (deltaBytes * 8.0) / 60.0 / 1000.0;
+
+                Ipv4Address ip = ipList[devId];
+                auto it = ipToDeviceNodeMap.find(ip);
+                Ptr<NetDevice> dev = it->second.first;
+                Ptr<Node> node = it->second.second;
+                std::string nodeName = Names::FindName(node);
+                std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
+
+                tx_throughputMap[{nodeName, band}] = tx_throughput;
+            }
             
             for (auto model : deviceEnergyModels)
             {
@@ -734,10 +777,12 @@ class ns3sim
                 std::string nodeName = Names::FindName(node);
                 std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
 
-                double throughput = throughputMap[{nodeName, band}];
+                double rx_throughput = rx_throughputMap[{nodeName, band}];
+                double tx_throughput = tx_throughputMap[{nodeName, band}];
                 std::cout << "Node Name: " << nodeName
                         << ", Band: " << band
-                        << ", RX Throughput: " << throughput << " Kbps"
+                        << ", TX Throughput: " << tx_throughput << " Kbps"
+                        << ", RX Throughput: " << rx_throughput << " Kbps"
                         << ", Energy Consumed: " << currentEnergy << " J"
                         << std::endl;
             }
@@ -817,7 +862,7 @@ class ns3sim
             if (g_triggerSend) {
                 std::lock_guard<std::mutex> lock(g_mutex);
                 
-                if (g_staConfig["numberOfSTA"] != 0){
+                if (!g_staConfig["STAConfig"].empty()){
                     for (const auto& sta : g_staConfig["STAConfig"]) 
                     {
                         ApplicationContainer sink_sta;
@@ -922,7 +967,7 @@ class ns3sim
                         if (sta["dataDirection"] == "UL") {
                             Address ul_sinkAddress(InetSocketAddress(ap_netdevice_ipAddr, port_ul));
                             BulkSendHelper ul_source("ns3::TcpSocketFactory", ul_sinkAddress);
-                            ul_source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
+                            ul_source.SetAttribute("MaxBytes", UintegerValue(sta["bytes"]));
                             ul_source.SetAttribute("SendSize", UintegerValue(payloadSize));
                             ApplicationContainer ul_sourceApps = ul_source.Install(staNode_P);
                             ul_sourceApps.Start(Seconds(0.1));
@@ -930,7 +975,7 @@ class ns3sim
                         } else if (sta["dataDirection"] == "DL") {
                             Address dl_sinkAddress(InetSocketAddress(sta_netdevice_ipAddr, port_dl));
                             BulkSendHelper dl_source("ns3::TcpSocketFactory", dl_sinkAddress);
-                            dl_source.SetAttribute("MaxBytes", UintegerValue(sta["TXbytes"]));
+                            dl_source.SetAttribute("MaxBytes", UintegerValue(sta["bytes"]));
                             dl_source.SetAttribute("SendSize", UintegerValue(payloadSize));
                             ApplicationContainer dl_sourceApps = dl_source.Install(apNode_staconneced);
                             dl_sourceApps.Start(Seconds(0.1));
@@ -940,28 +985,11 @@ class ns3sim
                             continue;
                         }
                     }
+                }else
+                {
+                    std::cout << "No STA update in this Mins." << std::endl;
                 }
 
-                // for (const auto& [minuteKey, config] : g_allStaConfigs) {
-                //     //std::string minute = minuteKey;
-                //     std::string dateTime = config["DateTime"];
-                //     size_t numSta = config["numberOfSTA"];
-                //     auto staConfigs = config["STAConfig"];
-
-                //     for (const auto& sta : config["STAConfig"]) {
-                //         std::string staName = sta["STAName"];
-                //         std::string connectedAP = sta["connectedofAP"];
-                //         std::string radioBand = sta["radio band"];
-                //         uint64_t txBytes = sta["TXbytes"];
-                //         std::string dataDirection = sta["dataDirection"];
-
-                //         std::cout << "STA Name: " << staName
-                //                 << ", Connected AP: " << connectedAP
-                //                 << ", Radio Band: " << radioBand
-                //                 << ", TX Bytes: " << txBytes
-                //                 << ", Data Direction: " << dataDirection << std::endl;
-                //     }
-                // }
                 g_triggerSend = false;
                 std::cout << "g_triggerSend: " << g_triggerSend << std::endl;
                 std::cout << std::string(150, '=') << std::endl;

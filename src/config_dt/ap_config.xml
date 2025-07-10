@@ -1,5 +1,5 @@
 <ManagedElement xmlns="urn:3gpp:sa5:_3gpp-common-managed-element">
-  <id>ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-1324</id>
+  <id>ManagedElement=ns3-wifi-dt,ntust-wifi-dt-ap-1327</id>
   <attributes>
     <priorityLabel>1</priorityLabel>
   </attributes>

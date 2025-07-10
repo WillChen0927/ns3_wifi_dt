@@ -11,30 +11,6 @@
         "dataDirection": "UL"
       },
       {
-        "STAName": "m11302230",
-        "ssid": "ntust-peap",
-        "connectedofAP": "RB_1F_AP01",
-        "radio band": "5GHz",
-        "bytes": 10000000,
-        "dataDirection": "UL"
-      },
-      {
-        "STAName": "m11302231",
-        "ssid": "ntust-peap",
-        "connectedofAP": "RB_1F_AP01",
-        "radio band": "5GHz",
-        "bytes": 10000000,
-        "dataDirection": "UL"
-      },
-      {
-        "STAName": "m11302232",
-        "ssid": "ntust-peap",
-        "connectedofAP": "RB_1F_AP04",
-        "radio band": "2.4GHz",
-        "bytes": 10000000,
-        "dataDirection": "UL"
-      },
-      {
         "STAName": "m11302233",
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
@@ -55,7 +31,7 @@
         "ssid": "ntust-peap",
         "connectedofAP": "RB_1F_AP04",
         "radio band": "5GHz",
-        "bytes": 40000000,
+        "bytes": 20000000,
         "dataDirection": "UL"
       }
     ]
