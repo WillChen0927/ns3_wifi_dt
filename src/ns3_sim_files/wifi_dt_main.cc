@@ -72,10 +72,7 @@ ApplicationContainer sinkApps_ap;
 std::map<uint32_t, Ptr<PacketSink>> sinkAppMap_ap;
 std::map<std::string, Ptr<PacketSink>> sinkAppMap_sta;
 std::map<uint32_t, uint64_t> previousRxBytes_ap;
-
-std::map<uint32_t, uint64_t> g_txBytesPerDevice;
-std::map<uint32_t, uint64_t> g_prevTxBytesPerDevice;
-
+std::map<std::pair<std::string, std::string>, double> tx_BytesPerAppMap;
 std::map<std::string, uint64_t> previousRxBytes_sta;
 std::map<Ptr<WifiRadioEnergyModel>, double> previouspower;
 std::map<Ipv4Address, std::pair<Ptr<NetDevice>, Ptr<Node>>> ipToDeviceNodeMap;
@@ -593,28 +590,27 @@ class ns3sim
                 sinkAppMap_ap[i] = DynamicCast<PacketSink>(sinkApps_ap.Get(i));
             }
 
-            uint32_t devCounter = 0;
-            for (uint32_t i = 0; i < apNodes.GetN(); ++i)
-            {
-                Ptr<Node> node = apNodes.Get(i);
-                for (uint32_t j = 0; j < node->GetNDevices(); ++j)
-                {
-                    Ptr<NetDevice> dev = node->GetDevice(j);
-                    if (!DynamicCast<WifiNetDevice>(dev)) continue;
-
-                    std::ostringstream path;
-                    path << "/NodeList/" << node->GetId()
-                        << "/DeviceList/" << j
-                        << "/$ns3::WifiNetDevice/Mac/MacTx";
-
-                    Config::ConnectWithoutContext(path.str(), MakeBoundCallback(&MacTxTrace, devCounter));
-                    devCounter++;
-                }
-            }
+            Ipv4Address apAddress("10.2.2.1");
+            Address fake(InetSocketAddress(apAddress, port_dl));
+            BulkSendHelper source("ns3::TcpSocketFactory", fake);
+            source.SetAttribute("MaxBytes", UintegerValue(10));
+            ApplicationContainer sourceApps = source.Install(apNodes);
+            sourceApps.Start(Seconds(0.1));
+            sourceApps.Stop(Seconds(1));
 
             coTraceHelper.Enable (apDevices_all);
             coTraceHelper.Start(Seconds(0.1));
             coTraceHelper.Stop(simTime);
+
+            // for (uint32_t i = 0; i < apNodes.GetN(); ++i)
+            // {
+            //     std::cout << "1." << std::endl;
+            //     Ptr<Node> node = apNodes.Get(i);
+            //     std::ostringstream path;
+            //     path << "/NodeList/" << node->GetId() << "/ApplicationList/*/$ns3::BulkSendApplication/Tx";
+
+            //     Config::ConnectWithoutContext(path.str(), MakeBoundCallback(&ap_TxTrace, node));
+            // }
 
             Simulator::Schedule(Seconds(1), &ns3sim::show_deployed_ap_info);
             Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
@@ -632,10 +628,45 @@ class ns3sim
         }
 
     private:
-
-        static void MacTxTrace(uint32_t devId, Ptr<const Packet> packet)
+        static void ap_TxTrace(Ptr<Node> node, Ptr<const Packet> packet)
         {
-            g_txBytesPerDevice[devId] += packet->GetSize();
+            uint32_t nApps = node->GetNApplications();
+            for (uint32_t i = 0; i < nApps; ++i)
+            {
+                std::string nodeName = Names::FindName(node);
+                Ptr<Application> app = node->GetApplication(i);
+                Ptr<BulkSendApplication> bulkApp = DynamicCast<BulkSendApplication>(app);
+                if (bulkApp)
+                {
+                    Ptr<Socket> socket = bulkApp->GetSocket();
+                    if (socket)
+                    {
+                        Address remote;
+                        if (socket->GetPeerName(remote) == 0)
+                        {
+                            InetSocketAddress inetAddr = InetSocketAddress::ConvertFrom(remote);
+                            Ipv4Address ip = inetAddr.GetIpv4();
+                            Ipv4Address subnet24("10.1.0.0");
+                            Ipv4Mask mask24("255.255.252.0");
+                            Ipv4Address subnet5("10.1.4.0");
+                            Ipv4Mask mask5("255.255.252.0");
+                            if (ip.CombineMask(mask24) == subnet24) {
+                                uint64_t txBytes = packet->GetSize();
+                                tx_BytesPerAppMap[std::make_pair(nodeName, "2.4 GHz")] += txBytes;
+                                std::cout << tx_BytesPerAppMap[std::make_pair(nodeName, "2.4 GHz")] << std::endl;
+                            } else if (ip.CombineMask(mask5) == subnet5) {
+                                uint64_t txBytes = packet->GetSize();
+                                tx_BytesPerAppMap[std::make_pair(nodeName, "  5 GHz")] += txBytes;
+                                std::cout << tx_BytesPerAppMap[std::make_pair(nodeName, "  5 GHz")] << std::endl;
+                            }
+                        }
+                        else
+                        {
+                            std::cout << "GetPeerName failed." << std::endl;
+                        }
+                    }
+                }
+            }
         }
 
         static std::string Get5GChannelConfig(int inputChannel)
@@ -731,7 +762,7 @@ class ns3sim
             std::cout << "==>[SIM " << simTime << "s] Wall time: " << std::ctime(&realTime);
 
             std::map<std::pair<std::string, std::string>, double> rx_throughputMap;
-            std::map<std::pair<std::string, std::string>, double> tx_throughputMap;
+            //std::map<std::pair<std::string, std::string>, double> tx_throughputMap;
 
             for (const auto &sinkApp : sinkAppMap_ap)
             {
@@ -746,25 +777,24 @@ class ns3sim
                 Ptr<Node> node = it->second.second;
                 std::string nodeName = Names::FindName(node);
                 std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
-
                 rx_throughputMap[{nodeName, band}] = rx_throughput;
             }
 
-            for (const auto& [devId, totalBytes] : g_txBytesPerDevice)
-            {
-                uint64_t deltaBytes = totalBytes - g_prevTxBytesPerDevice[devId];
-                g_prevTxBytesPerDevice[devId] = totalBytes;
-                double tx_throughput = (deltaBytes * 8.0) / 60.0 / 1000.0;
+            // for (const auto& [devId, totalBytes] : g_txBytesPerDevice)
+            // {
+            //     uint64_t deltaBytes = totalBytes - g_prevTxBytesPerDevice[devId];
+            //     g_prevTxBytesPerDevice[devId] = totalBytes;
+            //     double tx_throughput = (deltaBytes * 8.0) / 60.0 / 1000.0;
 
-                Ipv4Address ip = ipList[devId];
-                auto it = ipToDeviceNodeMap.find(ip);
-                Ptr<NetDevice> dev = it->second.first;
-                Ptr<Node> node = it->second.second;
-                std::string nodeName = Names::FindName(node);
-                std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
+            //     Ipv4Address ip = ipList[devId];
+            //     auto it = ipToDeviceNodeMap.find(ip);
+            //     Ptr<NetDevice> dev = it->second.first;
+            //     Ptr<Node> node = it->second.second;
+            //     std::string nodeName = Names::FindName(node);
+            //     std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
 
-                tx_throughputMap[{nodeName, band}] = tx_throughput;
-            }
+            //     tx_throughputMap[{nodeName, band}] = tx_throughput;
+            // }
             
             for (auto model : deviceEnergyModels)
             {
@@ -778,7 +808,8 @@ class ns3sim
                 std::string band = (dev->GetObject<WifiNetDevice>()->GetPhy()->GetFrequency() >= 5000) ? "  5 GHz" : "2.4 GHz";
 
                 double rx_throughput = rx_throughputMap[{nodeName, band}];
-                double tx_throughput = tx_throughputMap[{nodeName, band}];
+                double tx_total = tx_BytesPerAppMap[{nodeName, band}];
+                double tx_throughput = (tx_total * 8.0) / 60.0 / 1000.0;
                 std::cout << "Node Name: " << nodeName
                         << ", Band: " << band
                         << ", TX Throughput: " << tx_throughput << " Kbps"
@@ -787,6 +818,7 @@ class ns3sim
                         << std::endl;
             }
 
+            tx_BytesPerAppMap.clear();
             Simulator::Schedule(Seconds(60), &ns3sim::show_ap_output_info);
         }
 
@@ -993,6 +1025,15 @@ class ns3sim
                 g_triggerSend = false;
                 std::cout << "g_triggerSend: " << g_triggerSend << std::endl;
                 std::cout << std::string(150, '=') << std::endl;
+
+                for (uint32_t i = 0; i < apNodes.GetN(); ++i)
+                {
+                    Ptr<Node> node = apNodes.Get(i);
+                    std::ostringstream path;
+                    path << "/NodeList/" << node->GetId() << "/ApplicationList/*/$ns3::BulkSendApplication/Tx";
+
+                    Config::ConnectWithoutContext(path.str(), MakeBoundCallback(&ap_TxTrace, node));
+                }
             }
             Simulator::Schedule(Seconds(60), &ns3sim::sta_config);
         }
